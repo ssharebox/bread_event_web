@@ -34,15 +34,15 @@
 
 *{box-sizing:border-box;margin:0;padding:0}
 
-/* iOS 사파리는 주소창이 오르내리며 화면 높이가 변한다.
-   100%만 쓰면 아래가 잘리거나 빈 칸이 생긴다. 셋을 겹쳐 두면
-   되는 것부터 순서대로 적용된다 */
-html,body{height:100%;height:-webkit-fill-available;height:100dvh}
+/* 화면 높이를 재지 않는다. 문서가 그냥 아래로 이어지고
+   브라우저가 알아서 스크롤한다. iOS 주소창이 움직여도 상관없다 */
+html{height:auto}
 body{
+  min-height:100%;
   background:var(--night);color:var(--cream);
   font-family:var(--f-body);font-size:15px;line-height:1.6;
   -webkit-font-smoothing:antialiased;
-  overflow:hidden;touch-action:manipulation;
+  overflow-x:hidden;touch-action:manipulation;
   user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;
 }
 body::before{
@@ -96,12 +96,10 @@ body::before{
 #curtain.open .hint-open{opacity:0}
 @keyframes breathe{0%,100%{opacity:.45}50%{opacity:1}}
 
-#app{position:relative;z-index:1;overflow:hidden;
-  height:100%;height:-webkit-fill-available;height:100dvh}
+#app{position:relative;z-index:1}
 
-.screen{position:absolute;inset:0;display:none;flex-direction:column;
-  overflow-y:auto;overscroll-behavior:contain;
-  -webkit-overflow-scrolling:touch;             /* 옛 iOS의 관성 스크롤 */
+.screen{display:none;flex-direction:column;
+  min-height:100vh;                             /* 배경이 화면을 채우도록 */
   padding:clamp(16px,4vw,40px);
   padding-top:max(clamp(16px,4vw,40px), env(safe-area-inset-top));
   padding-bottom:max(clamp(24px,5vw,48px), env(safe-area-inset-bottom))}
@@ -154,7 +152,9 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 #backstage{justify-content:space-between;gap:20px;align-items:center}
 .masthead{display:flex;flex-direction:column;gap:6px;width:100%;max-width:1120px}
 /* 방은 항상 16:9. 창이 어떻게 바뀌어도 사물의 자리와 크기가 그대로다 */
-.room{position:relative;width:100%;max-width:1120px;aspect-ratio:16/9;
+.room{position:relative;width:100%;
+  max-width:min(1120px, calc(58vh * 16 / 9));   /* 세로가 짧아도 다 보이게 */
+  aspect-ratio:16/9;
   flex:0 0 auto;                    /* 세로로 눌리면 안의 배치가 다 어긋난다 */
   isolation:isolate;                /* 빛 웅덩이 합성을 방 안에서만 */
   container-type:inline-size;border:1px solid rgba(247,236,221,.1);
@@ -651,8 +651,9 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 
 /* 무대판 — 위쪽은 어두운 배경막, 아래는 나무 바닥.
    자리 잡는 격자는 남기되 아주 옅게만 */
-.plan-stage{position:relative;width:100%;max-width:900px;aspect-ratio:16/9;
-  max-height:62vh;container-type:inline-size;
+.plan-stage{position:relative;width:100%;
+  max-width:min(900px, calc(60vh * 16 / 9));
+  aspect-ratio:16/9;container-type:inline-size;
   background:
     repeating-linear-gradient(90deg,rgba(252,244,233,.05) 0 1px,transparent 1px 40px),
     repeating-linear-gradient(0deg,rgba(252,244,233,.05) 0 1px,transparent 1px 40px),
@@ -749,7 +750,9 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 /* 플레이 영역은 언제나 16:9. 남는 공간은 레터박스로 비운다 */
 .field{position:relative;z-index:1;flex:1;min-height:0;
   display:flex;align-items:center;justify-content:center;padding:0 clamp(8px,2vw,20px)}
-.frame16{position:relative;width:100%;aspect-ratio:16/9;max-height:100%;
+.frame16{position:relative;width:100%;
+  max-width:calc(66vh * 16 / 9);
+  aspect-ratio:16/9;
   box-shadow:0 0 0 1px rgba(247,236,221,.08);
   container-type:size;touch-action:none;
   /* 조작 버튼과 안내가 같은 기준을 쓴다. 하나만 바꿔도 함께 움직인다 */
