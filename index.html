@@ -601,7 +601,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 @media (max-width:640px){ .questlog{--ln:25px} }
 
 /* 무대 준비를 마치면 뜨는 알림 — 주변을 덮고 대기실로 돌려보낸다 */
-.done-pop{position:absolute;inset:0;z-index:30;display:none;
+.done-pop{position:fixed;inset:0;z-index:30;display:none;
   align-items:center;justify-content:center;padding:24px}
 .done-pop.on{display:flex;animation:popIn .35s ease}
 .done-pop .dim{position:absolute;inset:0;background:rgba(12,7,10,.78);
@@ -642,7 +642,6 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   background-position:center, 13% 0, 87% 0, left top, right top, center;
   background-repeat:no-repeat, no-repeat, no-repeat, repeat-y, repeat-y, no-repeat}
 #plan > *{position:relative;z-index:1;width:100%;max-width:960px}
-#plan .back{align-self:flex-start}
 
 .plan-palette{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0;justify-content:center}
 .chip{padding:7px 14px;font-size:13px;font-weight:600;
@@ -834,6 +833,77 @@ input[type=range]{width:150px;accent-color:var(--amber)}
   .masthead{display:none}
   .questlog{--ln:22px}
 }
+
+/* ============ 손안에서는 도로를 화면 가득 ============ */
+@media (max-width:820px) and (orientation:portrait){
+  /* 화면을 꽉 채우고 여백을 없앤다 */
+  #drive{padding:0;min-height:100svh;min-height:100vh}
+  .drive-wrap{min-height:100svh;min-height:100vh}
+  .drive-field{padding:0}
+
+  /* 16:9를 풀고 남는 세로를 전부 도로에 준다 */
+  #drive .frame16{max-width:none;width:100%;height:100%;aspect-ratio:auto;
+    box-shadow:none}
+  #drive .drive-field{align-items:stretch}
+
+  /* 계기판은 도로 위에 얹는다 */
+  .drive-hud{position:absolute;left:0;right:0;
+    top:max(52px, calc(env(safe-area-inset-top) + 44px));
+    padding:0 14px}
+  .pause-btn{top:max(10px, env(safe-area-inset-top));left:auto;right:12px;
+    transform:none;background:rgba(46,32,38,.7)}
+
+  /* 조작 버튼은 엄지가 닿는 자리로 */
+  #drive .frame16{--bb:max(7%, calc(env(safe-area-inset-bottom) + 22px))}
+}
+
+/* ============ 게임 중 상태 표시 ============ */
+.tally-chip{display:inline-flex;align-items:center;gap:7px;
+  padding:6px 12px 6px 8px;background:rgba(30,19,24,.72);
+  box-shadow:inset 0 0 0 1px rgba(252,244,233,.16);
+  font-size:12px;color:var(--dust);pointer-events:none}
+.tally-chip b{font-family:var(--f-display);font-weight:400;font-size:19px;
+  color:var(--cream);line-height:1;min-width:1.2em;text-align:center;
+  transition:transform .18s ease,color .18s ease}
+.tally-chip.bump b{transform:scale(1.45);color:var(--amber)}
+.tally-chip svg{width:19px;height:19px;flex:none}
+
+/* 주운 순간 숫자 위로 떠오르는 표시 */
+.pickup-float{position:absolute;z-index:6;pointer-events:none;
+  font-family:var(--f-display);font-size:17px;color:var(--amber);
+  text-shadow:0 2px 8px rgba(20,12,16,.8);
+  animation:floatUp .85s ease-out forwards}
+@keyframes floatUp{
+  0%  {opacity:0;transform:translate(-50%,0) scale(.7)}
+  22% {opacity:1;transform:translate(-50%,-14px) scale(1.1)}
+  100%{opacity:0;transform:translate(-50%,-52px) scale(1)}
+}
+
+/* 콤보 */
+.combo{margin-top:6px;font-size:11px;color:var(--dust);opacity:0;
+  transition:opacity .25s ease}
+.combo.on{opacity:1}
+.combo b{font-family:var(--f-display);font-weight:400;font-size:17px;
+  color:var(--amber);line-height:1}
+
+/* 배치도 — 목표와 완료 표시 */
+.plan-goal{display:flex;align-items:center;justify-content:center;gap:10px;
+  margin-top:14px;font-size:12.5px;color:var(--dust);
+  transition:color .3s ease}
+.plan-goal .dots{display:flex;gap:5px}
+.plan-goal .dots i{width:9px;height:9px;border-radius:50%;
+  background:rgba(252,244,233,.16);
+  box-shadow:inset 0 0 0 1px rgba(252,244,233,.28);
+  transition:background .3s ease,box-shadow .3s ease,transform .3s ease}
+.plan-goal .dots i.on{background:var(--amber);transform:scale(1.15);
+  box-shadow:0 0 12px rgba(246,182,92,.6)}
+.plan-goal.done{color:var(--amber)}
+
+#plan-back{margin-left:2px}
+/* 배치가 끝나면 무대 테두리가 살아난다 */
+.plan-stage.done{box-shadow:inset 0 0 0 2px rgba(246,182,92,.75),
+                 inset 0 0 90px rgba(14,8,11,.55),
+                 0 0 34px rgba(246,182,92,.28)}
 </style>
 </head>
 
@@ -1003,6 +1073,7 @@ input[type=range]{width:150px;accent-color:var(--amber)}
         <div>
           <div class="score" id="score">0</div>
           <div class="score-label" id="song-name">—</div>
+          <div class="combo" id="combo"><b id="combo-n">0</b> 연속</div>
         </div>
         <div class="gauge">
           <div class="gauge-bulbs" id="gauge"></div>
@@ -1073,9 +1144,17 @@ input[type=range]{width:150px;accent-color:var(--amber)}
   <section class="screen" id="drive">
     <div class="drive-wrap">
       <div class="drive-hud">
-        <div>
+        <div class="drive-left">
           <div class="cargo" id="cargo"></div>
           <div class="cargo-label">적재 상태</div>
+          <div class="tally-chip" id="box-chip" style="margin-top:9px">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3" y="8" width="18" height="13" rx="2" fill="#C9A06A"/>
+              <rect x="3" y="8" width="18" height="3" fill="#A8814F"/>
+              <rect x="10.5" y="6" width="3" height="15" fill="#EFE3CA"/>
+            </svg>
+            <b id="box-count">0</b><span>주운 소품</span>
+          </div>
         </div>
         <div class="progress">
           <div class="progress-track"><div class="progress-fill" id="prog-fill"></div></div>
@@ -1156,7 +1235,6 @@ input[type=range]{width:150px;accent-color:var(--amber)}
 
   <!-- ============ 무대 배치도 ============ -->
   <section class="screen" id="plan">
-    <button class="back" data-go="backstage">← 대기실로</button>
     <h2>무대 배치도</h2>
     <p class="sub tiny">항목을 눌러 무대에 올리고, 끌어서 자리를 잡는다. 아래쪽이 객석이다.</p>
 
@@ -1164,9 +1242,27 @@ input[type=range]{width:150px;accent-color:var(--amber)}
     <div class="plan-stage" id="plan-stage">
       <div class="plan-front">객석</div>
     </div>
+    <div class="plan-goal" id="plan-goal">
+      <span class="dots" id="plan-dots"></span>
+      <span id="plan-goal-text">세 개 이상 자리에 놓으면 배치가 끝난다</span>
+    </div>
+
+    <div class="done-pop" id="plan-pop">
+      <div class="dim"></div>
+      <div class="panel">
+        <div class="mark">✓</div>
+        <h3>배치 완료</h3>
+        <p>소품이 무대에 올랐다.<br>큐시트에서 한 줄이 지워졌다.</p>
+        <button class="btn" id="plan-pop-back">대기실로 돌아가기</button>
+        <button class="btn ghost" id="plan-pop-stay"
+          style="width:100%;margin-top:8px">더 배치하기</button>
+      </div>
+    </div>
+
     <div class="plan-bar">
       <button class="btn" id="plan-save">그림으로 저장</button>
       <button class="btn ghost" id="plan-clear">전부 치우기</button>
+      <button class="btn ghost" data-go="backstage" id="plan-back">← 대기실로</button>
       <span class="plan-count" id="plan-count">올린 것 0개</span>
     </div>
   </section>
@@ -1401,6 +1497,7 @@ function go(id){
   // 조명·음향 화면을 나가면 기준음도 함께 끈다. 안 그러면 계속 웅웅거린다
   if (id !== 'prep' && typeof sc !== 'undefined' && sc.on) toneStop();
   if (id !== 'prep') document.getElementById('prep-pop').classList.remove('on');
+  if (id !== 'plan') document.getElementById('plan-pop').classList.remove('on');
   if (id === 'backstage' && letterPending){
     letterPending = false;
     setTimeout(playLetterScene, 450);
@@ -1765,6 +1862,15 @@ function scheduleBackings(song, chart){
 /* ============================================================
    게임
    ============================================================ */
+/* 콤보는 두 개 이상부터 띄운다. 하나마다 뜨면 어지럽다 */
+const comboEl = document.getElementById('combo');
+const comboN  = document.getElementById('combo-n');
+function showCombo(){
+  const c = game.combo;
+  comboEl.classList.toggle('on', c >= 2);
+  if (c >= 2) comboN.textContent = c;
+}
+
 const game = {
   running:false, paused:false, song:null, chart:null,
   startAt:0, pausedAt:0, raf:0,
@@ -1894,6 +2000,7 @@ function hit(){
 function award(word, pts, perfect, mult){
   game.combo++;
   game.maxCombo = Math.max(game.maxCombo, game.combo);
+  showCombo();
   game.score += pts + Math.min(game.combo, 120) * 2;
   if (perfect) game.perfect++; else game.good++;
   game.gauge = Math.min(1, game.gauge + game.gaugeStep * (perfect ? 1 : .6) * mult);
@@ -1903,6 +2010,7 @@ function award(word, pts, perfect, mult){
 }
 function missNote(){
   game.combo = 0; game.miss++;
+  showCombo();
   game.gauge = Math.max(0, game.gauge - game.gaugeStep * 1.6);
   game.judge = { word:'놓침', at:performance.now(), color:'#8C2F3F' };
   drawGauge();
@@ -2201,7 +2309,13 @@ window.addEventListener('resize', () => { if (drive.running) driveResize(); });
 
 /* 원근 — d는 트럭 앞으로의 거리. 반환값 1이 눈앞, 0이 지평선 */
 const CAM = 6.5;
-const horizonY = () => RH * 0.36;
+/* 세로로 긴 화면에서도 사물 비례가 유지되도록,
+   16:9였을 때의 세로 길이를 척도로 쓴다 */
+const SC = () => RW * 9 / 16;
+
+/* 세로로 긴 화면에서 하늘이 화면 절반을 먹지 않도록,
+   하늘 높이를 가로 기준으로도 묶어 둔다 */
+const horizonY = () => Math.min(RH * 0.36, RW * 0.28);
 const groundY  = () => RH * 0.94;
 const roadHalf = () => RW * 0.44;
 function persp(d){ return CAM / (CAM + Math.max(d, -CAM * 0.85)); }
@@ -2274,6 +2388,26 @@ cargoEl.innerHTML = '<i></i>'.repeat(3);
 const cargoNodes = [...cargoEl.children];
 function drawCargo(){ cargoNodes.forEach((c, i) => c.classList.toggle('ok', i < drive.cargo)); }
 
+/* 주운 소품 — 좌상단 숫자가 튀어오르고, 주운 자리에 +1이 떠오른다 */
+const boxChip = document.getElementById('box-chip');
+const boxCount = document.getElementById('box-count');
+function bumpBoxes(px, py){
+  boxCount.textContent = drive.boxes;
+  boxChip.classList.remove('bump');
+  void boxChip.offsetWidth;              // 애니메이션을 처음부터 다시
+  boxChip.classList.add('bump');
+  setTimeout(() => boxChip.classList.remove('bump'), 200);
+
+  if (px == null) return;
+  const f = document.createElement('span');
+  f.className = 'pickup-float';
+  f.textContent = '+1';
+  f.style.left = (px / RW * 100) + '%';
+  f.style.top  = (py / RH * 100) + '%';
+  driveArea.parentElement.appendChild(f);
+  setTimeout(() => f.remove(), 900);
+}
+
 /* ---------- 시작 ---------- */
 function driveStart(route){
   initAudio(); ac.resume();
@@ -2283,6 +2417,7 @@ function driveStart(route){
   drive.pz = 0; drive.lane = 1; drive.x = 1;
   drive.speed = route.speed;
   drive.cargo = 3; drive.boxes = 0; drive.obs = [];
+  boxCount.textContent = '0';
   drive.nextZ = 26; drive.invuln = 0; drive.shake = 0;
   drive.elapsed = 0; drive.running = true; drive.paused = false;
 
@@ -2416,6 +2551,7 @@ function driveLoop(now){
 
     if (o.type === 'box'){
       o.hit = true; drive.boxes++; pickSound();
+      bumpBoxes(projX(o.lane, persp(o.z - drive.pz)), projY(persp(o.z - drive.pz)));
     } else if (drive.invuln <= 0){
       o.hit = true; drive.cargo--; drive.invuln = 1.4; drive.shake = .45;
       drive.speed *= .55; crashSound(); drawCargo();
@@ -2490,11 +2626,11 @@ function driveRender(p){
     for (const side of [-1, 1]){
       const x = RW/2 + side * roadHalf() * 1.16 * f;
       const y = projY(f);
-      const ph = RH * .19 * f;
+      const ph = SC() * .19 * f;
       rctx.fillStyle = 'rgba(115,85,94,.9)';
-      rctx.fillRect(x - RH * .005 * f, y - ph, RH * .01 * f, ph);
+      rctx.fillRect(x - SC() * .005 * f, y - ph, SC() * .01 * f, ph);
       rctx.fillStyle = `rgba(255,227,176,${.35 + f * .45})`;
-      rctx.beginPath(); rctx.arc(x, y - ph - RH * .006, RH * .011 * f + 1, 0, 7); rctx.fill();
+      rctx.beginPath(); rctx.arc(x, y - ph - SC() * .006, SC() * .011 * f + 1, 0, 7); rctx.fill();
     }
   }
 
@@ -2506,7 +2642,7 @@ function driveRender(p){
     if (d > 32) continue;
     const f = persp(d), x = projX(o.lane, f), y = projY(f);
     if (o.type === 'box'){
-      const s = RH * .13 * f;                       // 눈에 띄게 키웠다
+      const s = SC() * .13 * f;                     // 눈에 띄게 키웠다
       if (IMG.pickup && IMG.pickup.complete){
         rctx.drawImage(IMG.pickup, x - s/2, y - s, s, s);
       } else {
@@ -2531,7 +2667,7 @@ function driveRender(p){
       continue;
     }
     const spec = OBS[o.type];
-    const w = roadHalf() * spec.w * f, h = RH * .26 * spec.h * f;
+    const w = roadHalf() * spec.w * f, h = SC() * .26 * spec.h * f;
     const img = IMG['obs-' + o.type];
     if (img && img.complete){ rctx.drawImage(img, x - w/2, y - h, w, h); continue; }
 
@@ -2581,7 +2717,7 @@ function driveRender(p){
 
   // 트럭
   const tw = roadHalf() * .32, th = tw * 1.2;          // 차선 폭의 절반쯤
-  const tx = projX(drive.x, 1), ty = projY(1) + RH * .02;
+  const tx = projX(drive.x, 1), ty = projY(1) + SC() * .02;
   const blink = drive.invuln > 0 && Math.floor(drive.invuln * 12) % 2 === 0;
   rctx.globalAlpha = blink ? .45 : 1;
   const tilt = (drive.lane - drive.x) * .16;
@@ -3537,11 +3673,38 @@ function paintItem(it){
   it.el.style.top  = it.y + '%';
   it.el.classList.toggle('snapped', it.anchor !== null);
 }
+const planPop = document.getElementById('plan-pop');
+document.getElementById('plan-pop-back').onclick = () => {
+  planPop.classList.remove('on');
+  location.hash = 'backstage';
+};
+document.getElementById('plan-pop-stay').onclick = () => planPop.classList.remove('on');
+
+const planGoal = document.getElementById('plan-goal');
+const planGoalText = document.getElementById('plan-goal-text');
+document.getElementById('plan-dots').innerHTML = '<i></i>'.repeat(3);
+const planDots = [...document.getElementById('plan-dots').children];
+let planWasDone = false;
+
 function planCount(){
   const on = planItems.filter(i => i.anchor !== null).length;
   document.getElementById('plan-count').textContent =
     `자리에 놓인 것 ${on}개 · 전체 ${planItems.length}개`;
-  if (on >= 3) check('props');
+
+  planDots.forEach((d, i) => d.classList.toggle('on', i < Math.min(on, 3)));
+  const done = on >= 3;
+  planGoal.classList.toggle('done', done);
+  document.getElementById('plan-stage').classList.toggle('done', done);
+  planGoalText.textContent = done
+    ? '배치 완료 — 큐시트에서 한 줄이 지워졌다'
+    : `세 개 이상 자리에 놓으면 배치가 끝난다 · ${Math.max(0, 3 - on)}개 남음`;
+
+  if (done){
+    check('props');
+    if (!planWasDone){ planWasDone = true; setTimeout(() => planPop.classList.add('on'), 500); }
+  } else {
+    planWasDone = false;
+  }
 }
 document.getElementById('plan-clear').onclick = () => {
   planItems.forEach(it => { release(it); it.el.remove(); });
