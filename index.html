@@ -952,45 +952,15 @@ input[type=range]{width:150px;accent-color:var(--amber)}
   #plan .plan-count{width:100%;text-align:center;font-size:12.5px}
 }
 
-/* ============ 바코드 화면 ============
-   현장에서 스캐너로 읽어 엑셀에 바로 넣도록.
-   세로로 든 휴대폰에서는 바코드를 눕혀 화면 높이를 다 쓴다 */
-.bar-wrap{position:fixed;inset:0;z-index:40;display:none;
-  align-items:center;justify-content:center;flex-direction:column;
-  background:#FFFFFF;padding:20px}
-.bar-wrap.on{display:flex}
-.bar-stage{flex:1;width:100%;display:flex;align-items:center;justify-content:center;
-  overflow:hidden}
-.bar-stage canvas{display:block}
-.bar-stage.turn canvas{transform:rotate(90deg)}
-.bar-code{margin-top:14px;font-family:ui-monospace,monospace;font-weight:600;
-  font-size:clamp(15px,4.4vw,20px);letter-spacing:.06em;color:#1A1A1A;
-  text-align:center;overflow-wrap:anywhere}
-.bar-hint{margin-top:8px;font-size:12px;color:#6E6E6E;text-align:center;line-height:1.6}
-.bar-close{margin-top:16px;padding:13px 26px;font-size:15px;font-weight:600;
-  background:#2A2622;color:#FFFFFF;border:none}
-
-/* 바코드 화면 — 사용 완료 표시와 버튼 */
-.bar-btns{display:flex;gap:10px;margin-top:16px}
-.bar-close.ghost{background:none;color:#2A2622;
-  box-shadow:inset 0 0 0 1.5px rgba(42,38,34,.35)}
-.bar-note{display:none;margin-top:10px;padding:8px 16px;text-align:center;
-  font-size:12.5px;color:#9B1620;background:#F7E3E4;border-radius:2px}
-.bar-used{display:none;margin-top:12px;padding:10px 20px;text-align:center;
-  background:#C8232C;color:#FFFFFF;border-radius:2px}
-.bar-used b{display:block;font-size:17px;letter-spacing:.06em}
-.bar-used span{display:block;margin-top:2px;font-size:11.5px;opacity:.9}
-.bar-wrap.used .bar-used{display:block}
-.bar-wrap.used .bar-stage canvas{opacity:.28}
-.bar-wrap.used #bar-use{display:none}
-.bar-wrap.used #bar-hint{display:none}
-
 /* 쿠폰에도 도장을 찍는다 */
-.coupon-used{display:none;margin:0 0 14px;padding:9px;text-align:center;
-  background:#C8232C;color:#FFF;font-weight:600;font-size:13px;letter-spacing:.04em}
+.coupon-used{display:none;margin:0 0 14px;padding:10px;text-align:center;
+  background:#C8232C;color:#FFF;font-weight:600;font-size:13px;letter-spacing:.03em}
+.coupon-used span{font-weight:400;opacity:.92}
 .coupon-wrap.used .coupon-used{display:block}
 .coupon-wrap.used .coupon-code{color:#A08872;text-decoration:line-through}
-.coupon-wrap.used #barcode-open{opacity:.55}
+.coupon-wrap.used #coupon-use{display:none}
+.coupon-msg{display:none;margin:0 0 10px;padding:9px 12px;border-radius:2px;
+  font-size:12px;line-height:1.55;color:#9B1620;background:#F7E3E4}
 </style>
 </head>
 
@@ -1377,20 +1347,6 @@ input[type=range]{width:150px;accent-color:var(--amber)}
   </div>
 
   <!-- ============ 스티커 굿즈 쿠폰 ============ -->
-  <div class="bar-wrap" id="bar-wrap">
-    <div class="bar-stage" id="bar-stage"><canvas id="bar-canvas"></canvas></div>
-    <p class="bar-code" id="bar-code">—</p>
-    <p class="bar-hint" id="bar-hint">스캐너로 읽어 엑셀에 입력하세요<br>잘 읽히지 않으면 화면 밝기를 최대로 올려 주세요</p>
-    <p class="bar-note" id="bar-note"></p>
-    <div class="bar-used" id="bar-used">
-      <b>사용 완료</b><span id="bar-used-at">—</span>
-    </div>
-    <div class="bar-btns">
-      <button class="bar-close ghost" id="bar-use">교환 완료 처리</button>
-      <button class="bar-close" id="bar-close">닫기</button>
-    </div>
-  </div>
-
   <div class="coupon-wrap" id="coupon-wrap">
     <div class="coupon-backdrop" data-coupon-close></div>
     <div class="coupon" role="dialog" aria-modal="true" aria-labelledby="coupon-title">
@@ -1405,13 +1361,14 @@ input[type=range]{width:150px;accent-color:var(--amber)}
           <span class="tag"><b>스티커 굿즈 사진</b>900 × 622</span>
         </div>
         <p class="coupon-caution">* 굿즈 구성은 변동 가능성 있음</p>
-        <p class="coupon-used" id="coupon-used">교환 완료 — 사용된 코드입니다</p>
+        <p class="coupon-used" id="coupon-used">교환 완료 — <span id="coupon-used-at">—</span></p>
         <p class="coupon-label">교환 코드</p>
         <p class="coupon-code" id="coupon-code">—</p>
         <p class="coupon-issued" id="coupon-issued">발급 —</p>
         <p class="coupon-note" id="coupon-note">현장 부스에서 코드를 보여 주시면 스티커로 교환해 드립니다.</p>
-        <button class="btn" id="barcode-open"
-          style="width:100%;margin-bottom:8px">바코드로 보기</button>
+        <p class="coupon-msg" id="coupon-msg"></p>
+        <button class="btn" id="coupon-use"
+          style="width:100%;margin-bottom:8px">교환 완료 처리</button>
         <button class="btn ghost coupon-close" data-coupon-close>닫기</button>
       </div>
     </div>
@@ -3483,7 +3440,7 @@ function markUsed(at){
    구글 스프레드시트에 붙인 Apps Script 주소를 넣으면
    부스가 여럿이어도 한 곳에서 중복을 막는다.
    비워 두면 기기에만 기록한다 (그래도 동작한다) */
-const LEDGER_URL = 'https://script.google.com/macros/s/AKfycbypjjghGQn_RI3hiZwcgPAp_TwzUqhXVkFda_E715eb4lEzpL2_658swZl6botvxG_a/exec';
+const LEDGER_URL = 'https://script.google.com/macros/s/AKfycby2KDp0QDs4H-GyHtpUauyVu0Z4MVZ3lm2GJmx6gyaK4jC9RKB_0VAi9owrrlgDGFWl/exec';
 
 async function askLedger(action, extra){
   if (!LEDGER_URL) return { status:'offline' };
@@ -3518,12 +3475,20 @@ document.getElementById('letter-env').addEventListener('click', () => {
   openCoupon();
 });
 
-function openCoupon(){
+async function openCoupon(){
   issueCoupon();
   document.getElementById('coupon-code').textContent = couponCode;
   document.getElementById('coupon-issued').textContent = `발급 ${couponAt}`;
   paintUsed();
+  setLedgerNote('');
   couponWrap.classList.add('on');
+
+  // 다른 부스에서 이미 교환됐는지 확인한다
+  if (!LEDGER_URL || couponUsedAt) return;
+  try {
+    const r = await askLedger('check');
+    if (r.status === 'already'){ markUsed(r.usedAt); paintUsed(); }
+  } catch (e) { /* 열 때 실패는 조용히 넘긴다. 처리 단계에서 다시 확인한다 */ }
   if (ac) pickSound();
   couponWrap.querySelector('.coupon-close').focus();
 }
@@ -3534,110 +3499,32 @@ function closeCoupon(){
 document.getElementById('envelope').addEventListener('click', openCoupon);
 
 /* ============================================================
-   ============  바코드 (Code 128 B)  ============
-   현장 스캐너가 읽어 엑셀 칸에 그대로 들어가도록.
-   라이브러리 없이 직접 그린다.
+   ============  교환 처리  ============
+   담당자가 굿즈를 건넨 뒤 누른다. 되돌릴 수 없다.
+   대장 주소가 설정돼 있으면 거기서 중복을 판정한다.
    ============================================================ */
-const C128 = [
-  '212222','222122','222221','121223','121322','131222','122213','122312','132212','221213',
-  '221312','231212','112232','122132','122231','113222','123122','123221','223211','221132',
-  '221231','213212','223112','312131','311222','321122','321221','312212','322112','322211',
-  '212123','212321','232121','111323','131123','131321','112313','132113','132311','211313',
-  '231113','231311','112133','112331','132131','113123','113321','133121','313121','211331',
-  '231131','213113','213311','213131','311123','311321','331121','312113','312311','332111',
-  '314111','221411','431111','111224','111422','121124','121421','141122','141221','112214',
-  '112412','122114','122411','142112','142211','241211','221114','413111','241112','134111',
-  '111242','121142','121241','114212','124112','124211','411212','421112','421211','212141',
-  '214121','412121','111143','111341','131141','114113','114311','411113','411311','113141',
-  '114131','311141','411131','211412','211214','211232','2331112',
-];
-
-/* 글자 → 굵기 문자열. 시작(104) · 본문 · 체크섬 · 정지(106) */
-function code128b(text){
-  const vals = [...text].map(ch => ch.charCodeAt(0) - 32);
-  let sum = 104;
-  vals.forEach((v, i) => { sum += v * (i + 1); });
-  return [104, ...vals, sum % 103, 106].map(v => C128[v]).join('');
-}
-
-const barWrap = document.getElementById('bar-wrap');
-const barStage = document.getElementById('bar-stage');
-const barCanvas = document.getElementById('bar-canvas');
-
-function drawBarcode(text){
-  const w = code128b(text);
-  const modules = [...w].reduce((a, c) => a + +c, 0);
-
-  // 세로로 든 화면에서는 눕혀서 화면 높이를 쓴다
-  const turn = window.innerHeight > window.innerWidth;
-  barStage.classList.toggle('turn', turn);
-  const along = (turn ? window.innerHeight : window.innerWidth) - 120;
-  const across = (turn ? window.innerWidth : window.innerHeight) * 0.42;
-
-  // 양옆 여백(quiet zone)이 없으면 스캐너가 시작을 못 찾는다. 규격은 10모듈 이상
-  const QZ = 12;
-  const m = Math.max(2, Math.floor(along / (modules + QZ * 2)));
-  const bw = (modules + QZ * 2) * m;
-  const bh = Math.max(90, Math.min(220, across));
-  const dpr = Math.min(3, window.devicePixelRatio || 1);
-
-  barCanvas.width = bw * dpr;
-  barCanvas.height = bh * dpr;
-  barCanvas.style.width = bw + 'px';
-  barCanvas.style.height = bh + 'px';
-
-  const x = barCanvas.getContext('2d');
-  x.setTransform(dpr, 0, 0, dpr, 0, 0);
-  x.fillStyle = '#FFFFFF'; x.fillRect(0, 0, bw, bh);
-  x.fillStyle = '#000000';
-  let px = QZ * m, bar = true;
-  for (const ch of w){
-    const run = +ch * m;
-    if (bar) x.fillRect(px, 0, run, bh);
-    px += run; bar = !bar;
-  }
+function setLedgerNote(msg){
+  const el = document.getElementById('coupon-msg');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.display = msg ? 'block' : 'none';
 }
 
 function paintUsed(){
   const used = !!couponUsedAt;
-  barWrap.classList.toggle('used', used);
   couponWrap.classList.toggle('used', used);
-  if (used) document.getElementById('bar-used-at').textContent = couponUsedAt + ' 처리';
+  if (used) document.getElementById('coupon-used-at').textContent = couponUsedAt;
 }
 
-async function openBarcode(){
-  const code = issueCoupon();
-  document.getElementById('bar-code').textContent = code;
-  paintUsed();
-  barWrap.classList.add('on');
-  drawBarcode(code);
-
-  // 다른 부스에서 이미 교환됐는지 확인한다
-  if (!LEDGER_URL || couponUsedAt) return;
-  try {
-    const r = await askLedger('check');
-    if (r.status === 'already'){ markUsed(r.usedAt); paintUsed(); }
-  } catch (e) { setLedgerNote('대장 확인 실패 — 담당자가 직접 확인해 주세요'); }
-}
-
-function setLedgerNote(msg){
-  const el = document.getElementById('bar-note');
-  el.textContent = msg || '';
-  el.style.display = msg ? 'block' : 'none';
-}
-function closeBarcode(){ barWrap.classList.remove('on'); }
-
-document.getElementById('barcode-open').addEventListener('click', openBarcode);
-document.getElementById('bar-close').addEventListener('click', closeBarcode);
-const barUse = document.getElementById('bar-use');
-barUse.addEventListener('click', async () => {
+const couponUse = document.getElementById('coupon-use');
+couponUse.addEventListener('click', async () => {
   if (!confirm('교환을 마쳤습니까?\n한 번 처리하면 되돌릴 수 없고, 이 코드는 다시 쓸 수 없습니다.')) return;
 
   if (!LEDGER_URL){ markUsed(); paintUsed(); return; }
 
-  barUse.disabled = true;
-  const label = barUse.textContent;
-  barUse.textContent = '확인 중…';
+  couponUse.disabled = true;
+  const label = couponUse.textContent;
+  couponUse.textContent = '확인 중…';
   setLedgerNote('');
   try {
     const r = await askLedger('use');
@@ -3650,15 +3537,17 @@ barUse.addEventListener('click', async () => {
       setLedgerNote(r.message || '처리하지 못했습니다');
     }
   } catch (e) {
-    // 통신이 끊겨도 현장은 멈추면 안 된다. 기기에만 기록하고 알린다
-    markUsed(); paintUsed();
-    setLedgerNote('대장에 기록하지 못했습니다 — 코드를 따로 적어 두세요');
+    // 대장에 닿지 못했다. 멋대로 완료 처리하면 중복을 놓친다 — 담당자가 정한다
+    if (confirm('대장에 연결하지 못했습니다.\n\n연결 없이 이 기기에서만 처리하시겠습니까?\n'
+              + '(중복 확인이 되지 않습니다. 코드를 따로 적어 두세요)')){
+      markUsed(); paintUsed();
+      setLedgerNote('연결 없이 처리함 — 코드를 따로 적어 두세요');
+    } else {
+      setLedgerNote('대장에 연결하지 못했습니다 — 다시 눌러 주세요');
+    }
   } finally {
-    barUse.disabled = false; barUse.textContent = label;
+    couponUse.disabled = false; couponUse.textContent = label;
   }
-});
-window.addEventListener('resize', () => {
-  if (barWrap.classList.contains('on')) drawBarcode(couponCode);
 });
 
 
