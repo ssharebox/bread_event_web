@@ -3442,12 +3442,45 @@ function markUsed(at){
    비워 두면 기기에만 기록한다 (그래도 동작한다) */
 const LEDGER_URL = 'https://script.google.com/macros/s/AKfycbypjjghGQn_RI3hiZwcgPAp_TwzUqhXVkFda_E715eb4lEzpL2_658swZl6botvxG_a/exec';
 
+/* 대장에 묻는다.
+   보통은 fetch 로 충분하고, 브라우저가 교차 출처를 막는 환경에서는
+   script 태그로 불러오는 방식(JSONP)으로 한 번 더 시도한다.
+   JSONP 는 Code.gs 를 최신으로 다시 배포해야 동작한다 */
+function ledgerQuery(args){
+  return new URLSearchParams({ code:couponCode, at:couponAt || '', ...args });
+}
+
+async function askByFetch(args){
+  const res = await fetch(`${LEDGER_URL}?${ledgerQuery(args)}`, { redirect:'follow' });
+  if (!res.ok) throw new Error('응답 오류 ' + res.status);
+  const text = await res.text();
+  try { return JSON.parse(text); }
+  catch (e) { throw new Error('JSON 이 아닌 응답'); }
+}
+
+let jsonpSeq = 0;
+function askByScript(args){
+  return new Promise((resolve, reject) => {
+    const name = `__ledger${++jsonpSeq}`;
+    const q = ledgerQuery(args); q.set('callback', name);
+    const el = document.createElement('script');
+    let done = false;
+    const clean = () => { delete window[name]; el.remove(); clearTimeout(timer); };
+    const timer = setTimeout(() => {
+      if (done) return; done = true; clean(); reject(new Error('응답이 없습니다'));
+    }, 12000);
+    window[name] = data => { done = true; clean(); resolve(data); };
+    el.onerror = () => { if (done) return; done = true; clean(); reject(new Error('연결 실패')); };
+    el.src = `${LEDGER_URL}?${q}`;
+    document.head.appendChild(el);
+  });
+}
+
 async function askLedger(action, extra){
   if (!LEDGER_URL) return { status:'offline' };
-  const q = new URLSearchParams({ action, code:couponCode, at:couponAt || '', ...(extra || {}) });
-  const res = await fetch(`${LEDGER_URL}?${q}`, { redirect:'follow' });
-  if (!res.ok) throw new Error('응답 오류 ' + res.status);
-  return await res.json();
+  const args = { action, ...(extra || {}) };
+  try { return await askByFetch(args); }
+  catch (e) { return await askByScript(args); }
 }
 const couponWrap = document.getElementById('coupon-wrap');
 document.getElementById('coupon-kicker').textContent = COUPON.kicker;
