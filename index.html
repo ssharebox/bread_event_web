@@ -974,6 +974,8 @@ input[type=range]{width:150px;accent-color:var(--amber)}
 .bar-btns{display:flex;gap:10px;margin-top:16px}
 .bar-close.ghost{background:none;color:#2A2622;
   box-shadow:inset 0 0 0 1.5px rgba(42,38,34,.35)}
+.bar-note{display:none;margin-top:10px;padding:8px 16px;text-align:center;
+  font-size:12.5px;color:#9B1620;background:#F7E3E4;border-radius:2px}
 .bar-used{display:none;margin-top:12px;padding:10px 20px;text-align:center;
   background:#C8232C;color:#FFFFFF;border-radius:2px}
 .bar-used b{display:block;font-size:17px;letter-spacing:.06em}
@@ -1379,6 +1381,7 @@ input[type=range]{width:150px;accent-color:var(--amber)}
     <div class="bar-stage" id="bar-stage"><canvas id="bar-canvas"></canvas></div>
     <p class="bar-code" id="bar-code">—</p>
     <p class="bar-hint" id="bar-hint">스캐너로 읽어 엑셀에 입력하세요<br>잘 읽히지 않으면 화면 밝기를 최대로 올려 주세요</p>
+    <p class="bar-note" id="bar-note"></p>
     <div class="bar-used" id="bar-used">
       <b>사용 완료</b><span id="bar-used-at">—</span>
     </div>
@@ -3469,11 +3472,25 @@ function issueCoupon(){
 }
 
 /* 현장 담당자가 교환을 마치면 누른다. 되돌릴 수 없다 */
-function markUsed(){
+function markUsed(at){
   if (couponUsedAt) return false;
-  couponUsedAt = stamp(new Date());
+  couponUsedAt = at || stamp(new Date());
   saveCoupon();
   return true;
+}
+
+/* ── 공용 교환 대장 (선택) ──────────────────────────────
+   구글 스프레드시트에 붙인 Apps Script 주소를 넣으면
+   부스가 여럿이어도 한 곳에서 중복을 막는다.
+   비워 두면 기기에만 기록한다 (그래도 동작한다) */
+const LEDGER_URL = 'https://script.google.com/macros/s/AKfycbypjjghGQn_RI3hiZwcgPAp_TwzUqhXVkFda_E715eb4lEzpL2_658swZl6botvxG_a/exec';
+
+async function askLedger(action, extra){
+  if (!LEDGER_URL) return { status:'offline' };
+  const q = new URLSearchParams({ action, code:couponCode, at:couponAt || '', ...(extra || {}) });
+  const res = await fetch(`${LEDGER_URL}?${q}`, { redirect:'follow' });
+  if (!res.ok) throw new Error('응답 오류 ' + res.status);
+  return await res.json();
 }
 const couponWrap = document.getElementById('coupon-wrap');
 document.getElementById('coupon-kicker').textContent = COUPON.kicker;
@@ -3588,21 +3605,57 @@ function paintUsed(){
   if (used) document.getElementById('bar-used-at').textContent = couponUsedAt + ' 처리';
 }
 
-function openBarcode(){
+async function openBarcode(){
   const code = issueCoupon();
   document.getElementById('bar-code').textContent = code;
   paintUsed();
   barWrap.classList.add('on');
   drawBarcode(code);
+
+  // 다른 부스에서 이미 교환됐는지 확인한다
+  if (!LEDGER_URL || couponUsedAt) return;
+  try {
+    const r = await askLedger('check');
+    if (r.status === 'already'){ markUsed(r.usedAt); paintUsed(); }
+  } catch (e) { setLedgerNote('대장 확인 실패 — 담당자가 직접 확인해 주세요'); }
+}
+
+function setLedgerNote(msg){
+  const el = document.getElementById('bar-note');
+  el.textContent = msg || '';
+  el.style.display = msg ? 'block' : 'none';
 }
 function closeBarcode(){ barWrap.classList.remove('on'); }
 
 document.getElementById('barcode-open').addEventListener('click', openBarcode);
 document.getElementById('bar-close').addEventListener('click', closeBarcode);
-document.getElementById('bar-use').addEventListener('click', () => {
+const barUse = document.getElementById('bar-use');
+barUse.addEventListener('click', async () => {
   if (!confirm('교환을 마쳤습니까?\n한 번 처리하면 되돌릴 수 없고, 이 코드는 다시 쓸 수 없습니다.')) return;
-  markUsed();
-  paintUsed();
+
+  if (!LEDGER_URL){ markUsed(); paintUsed(); return; }
+
+  barUse.disabled = true;
+  const label = barUse.textContent;
+  barUse.textContent = '확인 중…';
+  setLedgerNote('');
+  try {
+    const r = await askLedger('use');
+    if (r.status === 'ok'){
+      markUsed(r.usedAt); paintUsed();
+    } else if (r.status === 'already'){
+      markUsed(r.usedAt); paintUsed();
+      setLedgerNote(`이미 ${r.usedAt}에 교환된 코드입니다`);
+    } else {
+      setLedgerNote(r.message || '처리하지 못했습니다');
+    }
+  } catch (e) {
+    // 통신이 끊겨도 현장은 멈추면 안 된다. 기기에만 기록하고 알린다
+    markUsed(); paintUsed();
+    setLedgerNote('대장에 기록하지 못했습니다 — 코드를 따로 적어 두세요');
+  } finally {
+    barUse.disabled = false; barUse.textContent = label;
+  }
 });
 window.addEventListener('resize', () => {
   if (barWrap.classList.contains('on')) drawBarcode(couponCode);
