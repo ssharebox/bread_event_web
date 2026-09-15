@@ -371,8 +371,11 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .coupon-perf span.l{left:-11px}
 .coupon-perf span.r{right:-11px}
 .coupon-bottom{background:var(--cream);padding:22px 26px 26px;text-align:center}
-.coupon-bottom .slot{width:100%;aspect-ratio:1.5;margin-bottom:18px;
-  border-color:rgba(58,33,40,.25);background:rgba(58,33,40,.04)}
+.coupon-bottom .slot{width:100%;aspect-ratio:900/622;margin-bottom:18px;
+  border-color:rgba(58,33,40,.25);background:rgba(58,33,40,.04);
+  background-size:cover;background-position:center}
+.coupon-bottom .slot.filled{border:none;
+  box-shadow:0 4px 14px rgba(20,12,16,.22)}
 .coupon-bottom .slot .tag{color:#8A6A55}
 .coupon-bottom .slot .tag b{color:#5A3F44}
 .coupon-label{font-size:11px;color:#8A6A55}
@@ -1315,7 +1318,7 @@ input[type=range]{width:150px;accent-color:var(--amber)}
       <div class="coupon-perf"><span class="l"></span><span class="r"></span></div>
       <div class="coupon-bottom">
         <div class="slot" data-asset="sticker-goods">
-          <span class="tag"><b>스티커 굿즈 사진</b>600 × 400</span>
+          <span class="tag"><b>스티커 굿즈 사진</b>900 × 622</span>
         </div>
         <p class="coupon-label">교환 코드</p>
         <p class="coupon-code" id="coupon-code">BACKSTAGE-0000</p>
@@ -1366,7 +1369,7 @@ input[type=range]{width:150px;accent-color:var(--amber)}
 
    [ 스티커 굿즈 ]
      envelope        280×200  편지 봉투     (전부 완료 시 대기실에 놓인다)
-     sticker-goods   600×400  스티커 굿즈 사진 (쿠폰 안에 들어간다)
+     sticker-goods   900×622  증명사진 (동물 VER) 스티커  ✔ img/sticker-goods.jpg
 
    [ 리듬 게임 ]
      bg-stage       1920×1080 무대 뒤 배경          ✔ img/bg-stage.jpg
@@ -1434,7 +1437,7 @@ const ASSETS = {
   'fill-truck':   { src:null },
   'silhouette':   { src:IMG_STAR },
   'envelope':     { src:null },
-  'sticker-goods':{ src:null },
+  'sticker-goods':{ src:'img/sticker-goods.jpg' },
   'note':         { src:null },
   'note-big':     { src:null },
   'target':       { src:null },
