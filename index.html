@@ -994,6 +994,13 @@ html.play-lock,html.play-lock body{overflow:hidden;height:100%;overscroll-behavi
 /* 무대 배치도 — 무대 빈 곳을 쓸면 페이지가 내려가고, 소품을 잡으면 끌린다 */
 .plan-stage{touch-action:pan-y}
 .plan-item{touch-action:none}
+
+/* 사운드 체크 — 맞출 칸이 은은하게 숨쉰다 */
+.tone-target .tt-glow{animation:ttPulse 1.6s ease-in-out infinite}
+@keyframes ttPulse{0%,100%{opacity:.12}50%{opacity:.38}}
+.tone-target.hit .tt-band{stroke:#7FC8A0;stroke-dasharray:none}
+.tone-target.hit .tt-glow{fill:#7FC8A0;animation:none;opacity:.3}
+.tone-target.hit .tt-label{fill:#7FC8A0}
 </style>
 </head>
 
@@ -1308,7 +1315,8 @@ html.play-lock,html.play-lock body{overflow:hidden;height:100%;overscroll-behavi
   <section class="screen" id="prep">
     <button class="back" data-go="backstage">← 대기실로</button>
     <h2>조명과 음향</h2>
-    <p class="sub tiny">랙에 물린 장비들. 페이더를 올려 불을 켜고, 기준음을 맞춰 사운드 체크를 끝낸다.</p>
+    <p class="sub tiny"><b>① 조명</b> 페이더를 올려 출력을 90% 넘게 &nbsp;·&nbsp;
+      <b>② 사운드</b> 주파수 손잡이를 빛나는 칸에 맞추기</p>
 
     <div class="rack" id="rack"></div>
 
@@ -3155,6 +3163,14 @@ const toneInner = `
   </g>
 
   ${faderSVG('tone', '주파수', TONE.x, TT, TL, { color:'#FFEDCC' })}
+  <g id="tone-target" class="tone-target" pointer-events="none">
+    <rect class="tt-glow" x="${TONE.x - 46}" y="-12" width="92" height="24" rx="6"
+          fill="#F6B65C" opacity=".22"/>
+    <rect class="tt-band" x="${TONE.x - 40}" y="-7" width="80" height="14" rx="4"
+          fill="none" stroke="#F6B65C" stroke-width="2.5" stroke-dasharray="6 4"/>
+    <text class="ru-l tt-label" x="${TONE.x + 52}" y="5"
+          style="font-size:13px;fill:#F6B65C;text-anchor:start">여기</text>
+  </g>
   ${readout(TONE.x, MT + MH + 44, 66, 'id="tone-hz"')}
 
   <rect x="${SCOPE.x}" y="${SCOPE.y}" width="${SCOPE.w}" height="${SCOPE.h}" rx="4"
@@ -3182,7 +3198,7 @@ const toneInner = `
   <circle class="okled" cx="${VUBOX.x + VUBOX.w - 26}" cy="${VUBOX.y + 24}" r="9"
           fill="#2F4A3A" stroke="#2A1D22"/>
   <text id="tone-msg" x="${VUBOX.x}" y="${MT + MH + 34}"
-        style="font-size:13px;fill:var(--dust)">모니터가 꺼져 있다</text>`;
+        style="font-size:13px;fill:var(--dust)">손잡이를 빛나는 칸으로</text>`;
 
 /* ---------- 3. 모니터 조정 ---------- */
 const MON = [
@@ -3280,6 +3296,10 @@ MON.forEach(m => {
 
 /* ---------- 사운드 체크 ---------- */
 const sc = { on:false, target:.5, user:.5, ref:null, mine:null, hold:0, raf:0, passed:false, ph:0 };
+/* 맞았다고 보는 폭. 화면의 '여기' 칸과 같은 크기다 */
+const TONE_WIN = .05;
+/* 손잡이 처음 자리와 너무 가깝지 않게 기준을 정한다 */
+sc.target = Math.random() < .5 ? .14 + Math.random() * .22 : .64 + Math.random() * .22;
 const freqOf = n => 220 + n * 720;                 // 0~1 → 220~940Hz
 const toneMsgEl = document.getElementById('tone-msg');
 const toneHzEl  = document.getElementById('tone-hz');
@@ -3290,8 +3310,14 @@ const powerLed  = document.querySelector('.pled');
 const rocker    = document.querySelector('.rock');
 
 
+const toneTarget = document.getElementById('tone-target');
+const placeTarget = () =>
+  toneTarget.setAttribute('transform', `translate(0 ${TT + TL * (1 - sc.target)})`);
+placeTarget();
+
 const paintTone = bindFader('tone', TT, TL, () => sc.user, n => {
   if (sc.passed) return;                      // 이미 맞췄으면 그대로 둔다
+  if (!sc.on) toneStart();                    // 손잡이를 잡으면 알아서 켜진다
   sc.user = n;
   toneHzEl.textContent = Math.round(freqOf(n)) + 'Hz';
   if (sc.mine) sc.mine.o.frequency.setTargetAtTime(freqOf(n), ac.currentTime, .04);
@@ -3331,12 +3357,11 @@ function toneStart(){
     rocker.setAttribute('y', MT + 53); rocker.setAttribute('fill', '#5E4550');
     powerLed.setAttribute('fill', '#FF6B5A');
     powerLed.style.filter = 'drop-shadow(0 0 7px #FF6B5A)';
-    toneMsgEl.textContent = '맞았다 · 사운드 체크 완료';
+    toneMsgEl.textContent = '사운드 체크 완료';
     toneLoop();
     return;
   }
 
-  sc.target = .1 + Math.random() * .8;              // 매번 다른 기준음
   const mk = (f, vol) => {
     const o = ac.createOscillator(); o.type = 'sine'; o.frequency.value = f;
     const g = ac.createGain(); g.gain.value = 0;
@@ -3363,7 +3388,7 @@ function toneStop(){
   sc.ref = sc.mine = null;
   rocker.setAttribute('y', MT + 9); rocker.setAttribute('fill', '#8E6C76');
   powerLed.setAttribute('fill', '#4A2F35'); powerLed.style.filter = 'none';
-  if (!sc.passed) toneMsgEl.textContent = '모니터가 꺼져 있다';
+  if (!sc.passed) toneMsgEl.textContent = '손잡이를 빛나는 칸으로';
   needleEl.setAttribute('transform', `rotate(-90 ${VU.cx} ${VU.cy})`);
 }
 document.querySelector('[data-sw="power"]').addEventListener('pointerdown', e => {
@@ -3393,16 +3418,18 @@ function toneLoop(){
   }
   scopeEl.setAttribute('d', d);
 
-  const inRange = diff < 9;
+  const gap = sc.passed ? 0 : sc.user - sc.target;      // + 면 너무 높다
+  const inRange = Math.abs(gap) < TONE_WIN;
   okLed.setAttribute('fill', inRange ? '#7FC8A0' : '#2F4A3A');
   okLed.style.filter = inRange ? 'drop-shadow(0 0 8px #7FC8A0)' : 'none';
+  toneTarget.classList.toggle('hit', inRange || sc.passed);
 
   if (inRange){
     sc.hold += 1/60;
-    if (!sc.passed) toneMsgEl.textContent = '거의 맞았다';
-    if (sc.hold > .6 && !sc.passed){
+    if (!sc.passed) toneMsgEl.textContent = '좋아요 · 그대로 잠깐';
+    if (sc.hold > .5 && !sc.passed){
       sc.passed = true;
-      toneMsgEl.textContent = '맞았다 · 사운드 체크 완료';
+      toneMsgEl.textContent = '사운드 체크 완료';
       silenceTone();          // 겹쳐 울리던 두 음을 끊는다
       chime();                // 띠링
       sc.user = sc.target;    // 손잡이와 표시창을 정답 위치에 맞춰 둔다
@@ -3413,7 +3440,7 @@ function toneLoop(){
     }
   } else {
     sc.hold = 0;
-    if (!sc.passed) toneMsgEl.textContent = diff < 40 ? '조금만 더' : '두 소리가 겹친다';
+    if (!sc.passed) toneMsgEl.textContent = gap > 0 ? '↓ 조금 내려 보세요' : '↑ 조금 올려 보세요';
   }
 }
 
