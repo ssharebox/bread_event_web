@@ -56,6 +56,7 @@ body::before{
   display:flex;align-items:center;justify-content:center;
   background:none}          /* 배경을 두면 갈라져도 그 뒤만 보인다 */
 #curtain.gone{display:none}
+#curtain.open{pointer-events:none}
 
 /* 좌우 커튼 — 가운데서 만나 닫혀 있다 */
 #curtain .drape{position:absolute;top:0;bottom:0;width:51%;z-index:2;
@@ -415,25 +416,28 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .progress-meta{display:flex;justify-content:space-between;font-size:10.5px;
   color:var(--dust);margin-top:5px}
 
-.drive-hint{position:absolute;left:50%;bottom:calc(var(--bb) + var(--btn) + 12px);
+.drive-hint{position:absolute;left:50%;bottom:calc(var(--bb) + 6px);
   transform:translateX(-50%);z-index:3;width:min(80%,400px);text-align:center;
   font-size:clamp(11px,1.6vw,13px);color:var(--dust);pointer-events:none;
   background:rgba(62,44,51,.6);padding:4px 14px;transition:opacity .5s ease}
 
 /* 화면에 보이는 조작 버튼 — 마우스로도 터치로도 누른다 */
-/* 차선 버튼 — 그림으로 바꿨다. 글자는 화면 낭독기용으로만 남긴다 */
-.lane-btn{position:absolute;bottom:var(--bb);z-index:6;
-  width:var(--btn);aspect-ratio:1;
-  background:none;border:none;border-radius:50%;
-  background-size:contain;background-repeat:no-repeat;background-position:center;
+/* 차선 버튼 — 화면 좌우 가운데 높이에 둔다. 가려는 쪽을 그대로 누르면 된다.
+   그림은 흰 화살표뿐이라, 누르는 영역은 그림보다 넉넉하게 잡는다 */
+.lane-btn{position:absolute;top:50%;z-index:6;
+  width:var(--btn);height:calc(var(--btn) * 1.5);
+  transform:translateY(-50%);
+  background:none;border:none;
+  background-size:auto 62%;background-repeat:no-repeat;background-position:center;
   font-size:0;color:transparent;
-  filter:drop-shadow(0 4px 10px rgba(12,7,10,.55));
-  transition:transform .1s ease,filter .12s ease;touch-action:none}
-.lane-btn.left{left:4%}
-.lane-btn.right{right:4%}
-.lane-btn:hover{filter:drop-shadow(0 4px 12px rgba(12,7,10,.55)) brightness(1.08)}
-.lane-btn:active,.lane-btn.press{transform:scale(.9);
-  filter:drop-shadow(0 0 14px rgba(246,182,92,.75)) brightness(1.15)}
+  filter:drop-shadow(0 3px 8px rgba(12,7,10,.75));
+  opacity:.85;
+  transition:transform .1s ease,filter .12s ease,opacity .12s ease;touch-action:none}
+.lane-btn.left{left:1.5%}
+.lane-btn.right{right:1.5%}
+.lane-btn:hover{opacity:1}
+.lane-btn:active,.lane-btn.press{transform:translateY(-50%) scale(.86);opacity:1;
+  filter:drop-shadow(0 0 16px rgba(246,182,92,.9)) brightness(1.1)}
 
 /* 리듬 게임의 큰 치기 버튼 */
 .tap-pad{position:absolute;left:50%;bottom:var(--bb);transform:translateX(-50%);z-index:6;
@@ -452,7 +456,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   .frame16{--btn:clamp(70px,13.8vw,130px);--btn:clamp(70px,15cqw,130px);--pad:clamp(64px,6.76vw,96px);--pad:clamp(64px,13cqh,96px);--bb:3.64vw;--bb:7cqh}
 }
 @media (pointer:fine){
-  .lane-btn,.tap-pad{opacity:.5}
+  .lane-btn{opacity:.55}
+  .tap-pad{opacity:.5}
   .lane-btn:hover,.tap-pad:hover{opacity:1}
 }
 
@@ -560,7 +565,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 #setlist > *{width:100%;max-width:920px}
 .setlist-h{font-family:var(--f-display);font-weight:400;font-size:20px;margin-top:24px}
 .rack{width:100%;max-width:920px;display:flex;flex-direction:column;gap:9px;margin:20px 0}
-.ru{display:block;width:100%;height:auto;touch-action:none}
+.ru{display:block;width:100%;height:auto;touch-action:pan-y}
+.ru .fader,.ru .sw{touch-action:none;cursor:grab}
 .ru text{font-family:var(--f-body);fill:var(--cream)}
 .ru .ru-t{font-family:var(--f-display);font-size:19px;fill:rgba(252,244,233,.75)}
 .ru .ru-sub{font-size:12px;fill:var(--dust)}
@@ -2297,6 +2303,7 @@ tapArea.addEventListener('pointerdown', e => {
 
 /* 눈에 보이는 치기 버튼 */
 const tapPad = document.getElementById('tap-pad');
+tapPad.addEventListener('touchstart', e => e.preventDefault(), { passive:false });
 tapPad.addEventListener('pointerdown', e => {
   e.preventDefault(); e.stopPropagation();
   hit(); tapPad.classList.add('press');
@@ -2566,7 +2573,7 @@ driveArea.addEventListener('pointerdown', e => {
   let hold = 0;
   const press = e => {
     e.preventDefault(); e.stopPropagation();
-    b.setPointerCapture(e.pointerId);
+    try { b.setPointerCapture(e.pointerId); } catch (_) {}
     b.classList.add('press');
     moveLane(dir);
     clearInterval(hold);
@@ -2577,6 +2584,7 @@ driveArea.addEventListener('pointerdown', e => {
   b.addEventListener('pointerup', release);
   b.addEventListener('pointercancel', release);
   b.addEventListener('pointerleave', release);
+  b.addEventListener('touchstart', e => e.preventDefault(), { passive:false });
 });
 
 /* ---------- 진행 ---------- */
@@ -2930,14 +2938,19 @@ document.getElementById('arrival-retry').onclick = () => driveStart(drive.route)
 const SVGNS = 'http://www.w3.org/2000/svg';
 const rack = document.getElementById('rack');
 
+/* 좁은 화면에서는 랙을 600폭으로 다시 짠다.
+   1000폭을 그대로 줄이면 전화기에서 페이더가 손톱만 해진다 */
+const NARROW = !!(window.matchMedia && matchMedia('(max-width: 640px)').matches);
+const VW = NARROW ? 600 : 1000;
+
 /* 랙 유닛 껍데기 — 나사, 제목 */
 function unit(id, title, sub, h, inner){
-  const screws = [[17,17],[983,17],[17,h-17],[983,h-17]]
+  const screws = [[17,17],[VW-17,17],[17,h-17],[VW-17,h-17]]
     .map(([x,y]) => `<circle cx="${x}" cy="${y}" r="6" fill="#6B505A"/>
                      <circle cx="${x}" cy="${y}" r="2.4" fill="#241A1F"/>`).join('');
-  return `<svg class="ru" id="${id}" viewBox="0 0 1000 ${h}" xmlns="${SVGNS}">
-    <rect x="1" y="1" width="998" height="${h-2}" rx="7" fill="#4A363E" stroke="#2A1D22" stroke-width="2"/>
-    <rect x="34" y="14" width="932" height="${h-28}" rx="4" fill="#37272E"/>
+  return `<svg class="ru" id="${id}" viewBox="0 0 ${VW} ${h}" xmlns="${SVGNS}">
+    <rect x="1" y="1" width="${VW-2}" height="${h-2}" rx="7" fill="#4A363E" stroke="#2A1D22" stroke-width="2"/>
+    <rect x="34" y="14" width="${VW-68}" height="${h-28}" rx="4" fill="#37272E"/>
     ${screws}
     <text class="ru-t" x="70" y="52">${title}</text>
     <text class="ru-sub" x="70" y="73">${sub}</text>
@@ -2955,14 +2968,17 @@ function vbPoint(svg, e){
 /* ---------- 배치 기준 ----------
    좌표를 하나하나 박지 않고 이 영역 안에서 계산한다.
    L·R을 바꾸면 안의 요소가 통째로 따라 움직인다 */
-const U = { L:70, R:930, TOP:108 };
+const U = NARROW ? { L:52, R:548, TOP:104 } : { L:70, R:930, TOP:108 };
 const UW = U.R - U.L;
 const FT = U.TOP + 20, FH = 168;      // 조명 콘솔 페이더 트랙
 const MT = U.TOP + 14, MH = 140;      // 나머지 유닛 페이더 트랙
 const TT = MT, TL = MH;
-const H_LIGHT = FT + FH + 116;
+const H_LIGHT = NARROW ? FT + FH + 92 + 118 + 34 : FT + FH + 116;
 const H_RACK  = MT + MH + 120;
+const H_TONE  = NARROW ? MT + MH + 78 + 128 + 58 : H_RACK;
 
+const HIT = NARROW ? 110 : 72;
+const CAPW = NARROW ? 64 : 44, CAPH = NARROW ? 38 : 28;   // 손잡이
 function faderSVG(id, label, x, top, len, opt = {}){
   const ticks = Array.from({length:9}, (_,i) => {
     const y = top + len * i / 8;
@@ -2970,14 +2986,14 @@ function faderSVG(id, label, x, top, len, opt = {}){
   }).join('');
   return `<g class="fader" data-fader="${id}" tabindex="0" role="slider"
              aria-label="${label}" aria-valuemin="0" aria-valuemax="100">
-    <rect class="hit" x="${x-36}" y="${top-24}" width="72" height="${len+48}" fill="transparent"/>
-    <rect x="${x-17}" y="${top-11}" width="34" height="${len+22}" rx="4" fill="#241A1F"/>
+    <rect class="hit" x="${x-HIT/2}" y="${top-26}" width="${HIT}" height="${len+52}" fill="transparent"/>
+    <rect x="${x-(NARROW?22:17)}" y="${top-11}" width="${NARROW?44:34}" height="${len+22}" rx="4" fill="#241A1F"/>
     <rect x="${x-2.5}" y="${top}" width="5" height="${len}" rx="2.5" fill="#120C0F"/>
     ${ticks}
     <g class="cap">
-      <rect x="${x-22}" y="-14" width="44" height="28" rx="3"
-            fill="${opt.color || '#CBB3AC'}" stroke="#241A1F" stroke-width="1.5"/>
-      <rect x="${x-22}" y="-1.5" width="44" height="3" fill="#241A1F" opacity=".55"/>
+      <rect x="${x-CAPW/2}" y="${-CAPH/2}" width="${CAPW}" height="${CAPH}" rx="4"
+            fill="${opt.color || '#CBB3AC'}" stroke="#241A1F" stroke-width="1.6"/>
+      <rect x="${x-CAPW/2}" y="-1.6" width="${CAPW}" height="3.2" fill="#241A1F" opacity=".55"/>
     </g>
     <text class="ru-l" x="${x}" y="${top+len+34}">${label}</text>
   </g>`;
@@ -3000,13 +3016,29 @@ function bindFader(id, top, len, get, set){
     set(Math.max(0, Math.min(1, 1 - (p.y - top) / len)));
     paint();
   };
-  let on = false;
+  /* iOS 에서는 SVG 안쪽 요소의 pointer capture 가 잘 안 붙는다.
+     손가락이 트랙 밖으로 조금만 벗어나도 움직임이 끊겼다.
+     끄는 동안에는 창 전체에서 움직임을 받는다 */
+  let on = false, pid = null;
+  const move = e => { if (on && e.pointerId === pid) { e.preventDefault(); grab(e); } };
+  const stop = e => {
+    if (e.pointerId !== pid) return;
+    on = false; pid = null;
+    removeEventListener('pointermove', move);
+    removeEventListener('pointerup', stop);
+    removeEventListener('pointercancel', stop);
+  };
   g.addEventListener('pointerdown', e => {
-    e.preventDefault(); g.setPointerCapture(e.pointerId); on = true; grab(e);
+    e.preventDefault();
+    on = true; pid = e.pointerId;
+    try { g.setPointerCapture(e.pointerId); } catch (_) {}
+    addEventListener('pointermove', move, { passive:false });
+    addEventListener('pointerup', stop);
+    addEventListener('pointercancel', stop);
+    grab(e);
   });
-  g.addEventListener('pointermove',   e => { if (on) grab(e); });
-  g.addEventListener('pointerup',     () => on = false);
-  g.addEventListener('pointercancel', () => on = false);
+  // 페이더를 잡은 채로 페이지가 스크롤되지 않게 (iOS 는 touch-action 만으로 부족하다)
+  g.addEventListener('touchstart', e => e.preventDefault(), { passive:false });
   g.addEventListener('keydown', e => {
     const d = (e.key === 'ArrowUp' || e.key === 'ArrowRight') ? .05
             : (e.key === 'ArrowDown' || e.key === 'ArrowLeft') ? -.05 : 0;
@@ -3026,13 +3058,17 @@ const LIGHT_CH = [
   { id:'master', name:'마스터', color:'#F6B65C' },
 ];
 LIGHT_CH.forEach((c, i) => {
-  c.x = U.L + 46 + i * FADER_GAP + (i === 3 ? MASTER_GAP - FADER_GAP : 0);
+  c.x = NARROW
+    ? U.L + 50 + i * ((UW - 100) / 3)                 // 넷을 폭 전체에 고르게
+    : U.L + 46 + i * FADER_GAP + (i === 3 ? MASTER_GAP - FADER_GAP : 0);
   c.v = [.6, .55, .45, .65][i];   // 어둑한 상태에서 시작해 올려 가는 흐름
 });
 
 /* 출력 패널 — 남는 오른쪽 공간을 꽉 채우지 않고 여백을 둔다 */
-const OUT = { x:565, w:U.R - 565, y:FT + 4, h:FH - 8 };
-const LAMP_N = 14, LAMP_PAD = 34;
+const OUT = NARROW
+  ? { x:U.L, w:UW, y:FT + FH + 92, h:118 }            // 페이더 아래 한 줄로
+  : { x:565, w:U.R - 565, y:FT + 4, h:FH - 8 };
+const LAMP_N = NARROW ? 11 : 14, LAMP_PAD = 34;
 const LAMP_STEP = (OUT.w - LAMP_PAD * 2) / (LAMP_N - 1);
 const lampRow = Array.from({length:LAMP_N}, (_,i) =>
   `<circle class="dlamp" cx="${(OUT.x + LAMP_PAD + i * LAMP_STEP).toFixed(1)}"
@@ -3051,10 +3087,14 @@ const lightInner =
 
 /* ---------- 2. 톤 제너레이터 ---------- */
 const SW   = { x:U.L,       w:78 };
-const TONE = { x:U.L + 152 };
-const SCOPE= { x:U.L + 258, w:318, y:MT - 10, h:MH + 24 };
-const VU    = { cx:0, cy:MT + 134, r:104, len:86 };
-const VUBOX = { x:SCOPE.x + SCOPE.w + 30, y:SCOPE.y, h:SCOPE.h };
+const TONE = { x:U.L + (NARROW ? 150 : 152) };
+const SCOPE = NARROW
+  ? { x:U.L, w:UW, y:MT + MH + 78, h:128 }            // 아래 줄 전체
+  : { x:U.L + 258, w:318, y:MT - 10, h:MH + 24 };
+const VU    = { cx:0, cy:MT + 134, r:NARROW ? 96 : 104, len:NARROW ? 80 : 86 };
+const VUBOX = NARROW
+  ? { x:U.L + 238, y:MT - 10, h:MH + 24 }
+  : { x:SCOPE.x + SCOPE.w + 30, y:SCOPE.y, h:SCOPE.h };
 VUBOX.w = U.R - VUBOX.x;
 VU.cx = VUBOX.x + VUBOX.w / 2;
 
@@ -3087,7 +3127,7 @@ const toneInner = `
     ${Array.from({length:3},(_,i)=>`<rect x="${SCOPE.x}" y="${SCOPE.y + SCOPE.h/4*(i+1)}" width="${SCOPE.w}" height="1" fill="#7FC8A0"/>`).join('')}
   </g>
   <path id="scope-line" d="" fill="none" stroke="#7FC8A0" stroke-width="2.4" opacity=".9"/>
-  <text class="ru-l" x="${SCOPE.x + SCOPE.w/2}" y="${MT + MH + 34}"
+  <text class="ru-l" x="${SCOPE.x + SCOPE.w/2}" y="${NARROW ? SCOPE.y + SCOPE.h + 30 : MT + MH + 34}"
         style="font-size:12px;fill:var(--dust)">파형</text>
 
   <rect x="${VUBOX.x}" y="${VUBOX.y}" width="${VUBOX.w}" height="${VUBOX.h}" rx="4"
@@ -3113,26 +3153,32 @@ const MON = [
   { id:'speed',  name:'흐름 속도', min:1,    max:9,   step:1, v:4,  fmt:v => v },
   { id:'tapvol', name:'타격음',    min:0,    max:100, step:5, v:60, fmt:v => v },
 ];
-const MON_BOX = { x:U.R - 200, w:200 };
-MON.forEach((m, i) => { m.x = U.L + 110 + i * 200; });
+const MON_BOX = NARROW ? { x:U.L, w:UW } : { x:U.R - 200, w:200 };
+MON.forEach((m, i) => {
+  m.x = NARROW ? U.L + 70 + i * ((UW - 140) / 2) : U.L + 110 + i * 200;
+});
+const MON_Y = NARROW ? MT + MH + 88 : MT - 10;           // 설명 상자 윗변
+const MON_H = NARROW ? 96 : MH + 24;
+const H_MON = NARROW ? MON_Y + MON_H + 30 : H_RACK;
 
 const monInner = MON.map(m =>
   faderSVG(m.id, m.name, m.x, MT, MH) +
   readout(m.x, MT + MH + 44, 92, `data-kv="${m.id}"`)).join('') + `
-  <rect x="${MON_BOX.x}" y="${MT - 10}" width="${MON_BOX.w}" height="${MH + 24}" rx="4" fill="#241A1F"/>
-  ${['리허설에서','소리가 밀려 들릴 때','여기서 맞춘다'].map((t,i) =>
-    `<text class="ru-l" x="${MON_BOX.x + MON_BOX.w/2}" y="${MT + 34 + i*24}"
+  <rect x="${MON_BOX.x}" y="${MON_Y}" width="${MON_BOX.w}" height="${MON_H}" rx="4" fill="#241A1F"/>
+  ${(NARROW ? ['리허설에서 소리가 밀려 들릴 때', '여기서 맞춘다']
+            : ['리허설에서','소리가 밀려 들릴 때','여기서 맞춘다']).map((t,i) =>
+    `<text class="ru-l" x="${MON_BOX.x + MON_BOX.w/2}" y="${MON_Y + 44 + i*24}"
            style="font-size:12px;fill:var(--dust)">${t}</text>`).join('')}
-  <circle cx="${MON_BOX.x + MON_BOX.w/2}" cy="${MT + 124}" r="10"
-          fill="#3A2A31" stroke="rgba(247,236,221,.2)"/>`;
+  ${NARROW ? '' : `<circle cx="${MON_BOX.x + MON_BOX.w/2}" cy="${MT + 124}" r="10"
+          fill="#3A2A31" stroke="rgba(247,236,221,.2)"/>`}`;
 
 /* ---------- 랙 조립 ---------- */
 rack.innerHTML =
   unit('u-light', '조명 콘솔',    'LIGHTING DESK · 4CH',         H_LIGHT, lightInner) +
-  unit('u-tone',  '톤 제너레이터', 'TONE GENERATOR · SOUNDCHECK', H_RACK,  toneInner);
+  unit('u-tone',  '톤 제너레이터', 'TONE GENERATOR · SOUNDCHECK', H_TONE,  toneInner);
 
 document.getElementById('rack-trim').innerHTML =
-  unit('u-mon', '모니터 조정', 'MONITOR TRIM · 리허설 전에 맞춘다', H_RACK, monInner);
+  unit('u-mon', '모니터 조정', 'MONITOR TRIM · 리허설 전에 맞춘다', H_MON, monInner);
 
 /* ---------- 조명 동작 ---------- */
 const lightVal = {};
@@ -3286,6 +3332,8 @@ function toneStop(){
 document.querySelector('[data-sw="power"]').addEventListener('pointerdown', e => {
   e.preventDefault(); sc.on ? toneStop() : toneStart();
 });
+document.querySelector('[data-sw="power"]')
+  .addEventListener('touchstart', e => e.preventDefault(), { passive:false });
 
 function toneLoop(){
   if (!sc.on) return;
@@ -3442,12 +3490,45 @@ function markUsed(at){
    비워 두면 기기에만 기록한다 (그래도 동작한다) */
 const LEDGER_URL = 'https://script.google.com/macros/s/AKfycbypjjghGQn_RI3hiZwcgPAp_TwzUqhXVkFda_E715eb4lEzpL2_658swZl6botvxG_a/exec';
 
+/* 대장에 묻는다.
+   보통은 fetch 로 충분하고, 브라우저가 교차 출처를 막는 환경에서는
+   script 태그로 불러오는 방식(JSONP)으로 한 번 더 시도한다.
+   JSONP 는 Code.gs 를 최신으로 다시 배포해야 동작한다 */
+function ledgerQuery(args){
+  return new URLSearchParams({ code:couponCode, at:couponAt || '', ...args });
+}
+
+async function askByFetch(args){
+  const res = await fetch(`${LEDGER_URL}?${ledgerQuery(args)}`, { redirect:'follow' });
+  if (!res.ok) throw new Error('응답 오류 ' + res.status);
+  const text = await res.text();
+  try { return JSON.parse(text); }
+  catch (e) { throw new Error('JSON 이 아닌 응답'); }
+}
+
+let jsonpSeq = 0;
+function askByScript(args){
+  return new Promise((resolve, reject) => {
+    const name = `__ledger${++jsonpSeq}`;
+    const q = ledgerQuery(args); q.set('callback', name);
+    const el = document.createElement('script');
+    let done = false;
+    const clean = () => { delete window[name]; el.remove(); clearTimeout(timer); };
+    const timer = setTimeout(() => {
+      if (done) return; done = true; clean(); reject(new Error('응답이 없습니다'));
+    }, 12000);
+    window[name] = data => { done = true; clean(); resolve(data); };
+    el.onerror = () => { if (done) return; done = true; clean(); reject(new Error('연결 실패')); };
+    el.src = `${LEDGER_URL}?${q}`;
+    document.head.appendChild(el);
+  });
+}
+
 async function askLedger(action, extra){
   if (!LEDGER_URL) return { status:'offline' };
-  const q = new URLSearchParams({ action, code:couponCode, at:couponAt || '', ...(extra || {}) });
-  const res = await fetch(`${LEDGER_URL}?${q}`, { redirect:'follow' });
-  if (!res.ok) throw new Error('응답 오류 ' + res.status);
-  return await res.json();
+  const args = { action, ...(extra || {}) };
+  try { return await askByFetch(args); }
+  catch (e) { return await askByScript(args); }
 }
 const couponWrap = document.getElementById('coupon-wrap');
 document.getElementById('coupon-kicker').textContent = COUPON.kicker;
@@ -3855,7 +3936,7 @@ function addPlanItem(kind){
   el.addEventListener('pointerdown', e => {
     if (e.target.classList.contains('x')) return;
     e.preventDefault();
-    el.setPointerCapture(e.pointerId);
+    try { el.setPointerCapture(e.pointerId); } catch (_) {}
     drag = true; el.classList.add('dragging');
   });
   el.addEventListener('pointermove', e => {

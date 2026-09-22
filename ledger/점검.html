@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>교환 대장 연결 점검</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#FBF3E4;color:#3A2010;font-family:system-ui,-apple-system,sans-serif;
+       line-height:1.65;padding:24px}
+  .page{max-width:680px;margin:0 auto}
+  h1{font-size:22px;margin-bottom:6px}
+  .sub{font-size:13.5px;color:#7A6250;margin-bottom:22px}
+  label{display:block;font-size:12.5px;font-weight:600;margin:16px 0 6px}
+  input{width:100%;padding:11px 13px;font-size:13px;font-family:ui-monospace,monospace;
+        border:1.5px solid #C9B9A6;background:#FFF;border-radius:3px}
+  .row{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}
+  button{flex:1;min-width:150px;padding:13px 16px;font-size:14px;font-weight:700;
+         border:none;border-radius:3px;background:#E8760F;color:#FFF;cursor:pointer}
+  button.ghost{background:none;color:#3A2010;box-shadow:inset 0 0 0 1.6px #C9B9A6}
+  button:disabled{opacity:.5;cursor:default}
+  .out{margin-top:20px;padding:15px;border-radius:3px;font-size:13.5px;display:none}
+  .out.on{display:block}
+  .out.ok{background:#E3F3E6;color:#1E5B2C}
+  .out.bad{background:#F9E2E3;color:#8E1B24}
+  .out b{display:block;font-size:15px;margin-bottom:5px}
+  pre{margin-top:10px;padding:11px;background:#FFF;border:1px solid #E0D4C2;
+      border-radius:3px;font-size:11.5px;white-space:pre-wrap;word-break:break-all;
+      color:#3A2010;max-height:220px;overflow:auto}
+  .why{margin-top:26px;padding:16px;background:#F1E3C9;border-radius:3px;font-size:13px}
+  .why b{display:block;margin-bottom:8px}
+  .why li{margin-left:18px;margin-bottom:6px}
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>교환 대장 연결 점검</h1>
+  <p class="sub">Apps Script 웹앱이 제대로 응답하는지 이 자리에서 확인합니다.
+    이 파일은 브라우저로 그냥 열면 됩니다.</p>
+
+  <label for="url">웹 앱 주소 (끝이 /exec)</label>
+  <input id="url" value="https://script.google.com/macros/s/AKfycbypjjghGQn_RI3hiZwcgPAp_TwzUqhXVkFda_E715eb4lEzpL2_658swZl6botvxG_a/exec">
+
+  <label for="code">시험용 코드</label>
+  <input id="code" value="TEST-000000-000001">
+
+  <div class="row">
+    <button class="ghost" id="btn-check">1. 조회해 보기</button>
+    <button id="btn-use">2. 교환 기록해 보기</button>
+  </div>
+
+  <div class="out" id="out"></div>
+
+  <div class="why">
+    <b>결과가 안 나올 때 볼 곳</b>
+    <ul>
+      <li><b style="display:inline">액세스 권한</b> — 배포 설정에서 <i>모든 사용자</i>여야 합니다.
+        <i>나만</i>이면 사이트에서 부를 수 없습니다.</li>
+      <li><b style="display:inline">배포 갱신</b> — 코드를 고쳤으면
+        배포 → 배포 관리 → 편집 → 버전 새로 만들기를 해야 반영됩니다.</li>
+      <li><b style="display:inline">주소</b> — 끝이 <code>/exec</code>여야 합니다.
+        <code>/dev</code>로 끝나면 본인만 쓸 수 있습니다.</li>
+      <li><b style="display:inline">권한 승인</b> — 처음 배포할 때 권한 허용을 건너뛰면
+        스크립트가 시트에 쓰지 못합니다.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+'use strict';
+const out = document.getElementById('out');
+
+function show(ok, title, detail){
+  out.className = 'out on ' + (ok ? 'ok' : 'bad');
+  out.innerHTML = '';
+  const b = document.createElement('b'); b.textContent = title; out.appendChild(b);
+  if (detail){
+    const p = document.createElement('pre'); p.textContent = detail; out.appendChild(p);
+  }
+}
+
+async function call(action, btn){
+  const url = document.getElementById('url').value.trim();
+  const code = document.getElementById('code').value.trim();
+  if (!url.endsWith('/exec')){
+    show(false, '주소가 /exec 로 끝나지 않습니다', url);
+    return;
+  }
+  const label = btn.textContent;
+  btn.disabled = true; btn.textContent = '보내는 중…';
+  const q = new URLSearchParams({ action, code, at:'점검', by:'점검', note:'연결 점검' });
+
+  try {
+    const res = await fetch(`${url}?${q}`, { redirect:'follow' });
+    const text = await res.text();
+    let data = null;
+    try { data = JSON.parse(text); } catch (e) {}
+
+    if (!data){
+      show(false, '응답이 JSON 이 아닙니다',
+           `HTTP ${res.status}\n\n받은 내용 앞부분:\n${text.slice(0, 500)}`);
+      return;
+    }
+    if (data.status === 'error'){
+      show(false, '스크립트가 오류를 돌려줬습니다', JSON.stringify(data, null, 2));
+      return;
+    }
+    const msg = {
+      new: '아직 교환되지 않은 코드입니다',
+      already: '이미 교환된 코드입니다',
+      ok: '기록했습니다 — 스프레드시트를 확인해 보세요',
+    }[data.status] || '응답을 받았습니다';
+    show(true, msg, JSON.stringify(data, null, 2));
+
+  } catch (e) {
+    show(false, '연결하지 못했습니다',
+         `${e.message}\n\n` +
+         '브라우저가 요청을 막았거나(액세스 권한 "나만"), 주소가 틀렸거나,\n' +
+         '인터넷이 끊긴 경우입니다. 아래 안내를 확인해 주세요.');
+  } finally {
+    btn.disabled = false; btn.textContent = label;
+  }
+}
+
+document.getElementById('btn-check').onclick = e => call('check', e.currentTarget);
+document.getElementById('btn-use').onclick   = e => call('use',   e.currentTarget);
+</script>
+</body>
+</html>
