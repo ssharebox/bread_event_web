@@ -578,7 +578,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 
 /* 큐시트 — 줄공책에 적어 두고 하나씩 빨간 줄로 그어 지운다.
    --ln 이 줄 간격이자 한 항목 높이의 절반이라, 글자가 항상 줄 위에 앉는다 */
-.questlog{--ln:29px;
+.questlog{--ln:34px;
   width:100%;max-width:1120px;margin:16px 0 8px;padding:calc(var(--ln)*.9) 0 var(--ln);
   color:#2A2622;
   background:
@@ -592,28 +592,40 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 
 .ql-head{display:flex;align-items:baseline;gap:12px;
   height:calc(var(--ln)*2);padding:0 5% 0 11%}
-.ql-head h3{font-family:var(--f-display);font-weight:400;font-size:21px;color:#2A2622}
-.ql-count{font-size:12px;color:#7A6E63}
-.ql-note{margin-left:auto;font-size:11.5px;color:#A8443F}
+.ql-head h3{font-family:var(--f-display);font-weight:400;font-size:24px;color:#2A2622}
+.ql-count{font-size:14px;font-weight:600;color:#7A6E63}
+.ql-note{margin-left:auto;font-size:13.5px;font-weight:600;color:#A8443F;
+  background:none;border:none;padding:0;cursor:default}
+.questlog.open .ql-note{cursor:pointer;color:#FFF;background:#C0392F;
+  padding:5px 12px;border-radius:2px;animation:noteBlink 1.8s ease-in-out infinite}
+@keyframes noteBlink{50%{box-shadow:0 0 0 4px rgba(192,57,47,.2)}}
 
 .q-item{position:relative;display:flex;align-items:center;gap:3%;width:100%;
-  height:calc(var(--ln)*2);padding:0 5% 0 11%;text-align:left;
-  background:none;color:#2A2622;transition:background .2s}
-.q-item.manual:hover{background:rgba(224,69,90,.07)}
+  height:calc(var(--ln)*2);padding:0 4% 0 11%;text-align:left;
+  background:none;color:#2A2622;transition:background .2s;cursor:pointer}
+.q-item:hover,.q-item:focus-visible{background:rgba(232,118,15,.08)}
+.q-item:active{background:rgba(232,118,15,.15)}
+.q-text{display:flex;flex-direction:column;min-width:0}
 .q-item::after{content:'';position:absolute;left:9%;top:calc(var(--ln) * .62);
   height:3px;width:0;background:#C0392F;
   transition:width .55s cubic-bezier(.2,.7,.3,1)}
 .q-item.done::after{width:83%}
 .q-item.done .q-name,.q-item.done .q-desc{color:#7A6E63}
-.q-no{font-family:var(--f-display);font-size:16px;color:#8A7F72;
+.q-no{font-family:var(--f-display);font-size:18px;color:#8A7F72;
   min-width:26px;flex:none;position:absolute;left:3.5%;top:0;
   line-height:var(--ln)}
-.q-name{font-weight:600;font-size:15px;line-height:var(--ln)}
-.q-desc{font-size:11.5px;color:#6E645A;line-height:var(--ln)}
-.q-tag{margin-left:auto;font-size:10.5px;color:#A8443F;flex:none;
-  box-shadow:inset 0 0 0 1px rgba(168,68,63,.45);padding:2px 9px}
+.q-name{font-weight:700;font-size:18px;line-height:var(--ln)}
+.q-desc{font-size:14px;color:#5A5048;line-height:var(--ln);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* 오른쪽 표 — 게임이 있으면 '하러 가기', 없으면 '확인했어요' */
+.q-tag{margin-left:auto;flex:none;font-size:13px;font-weight:700;
+  padding:7px 13px;border-radius:2px;white-space:nowrap;transition:transform .15s}
+.q-item.go .q-tag{color:#FFF;background:#E8760F}
+.q-item.manual .q-tag{color:#A8443F;box-shadow:inset 0 0 0 1.5px rgba(168,68,63,.55)}
+.q-item:hover .q-tag{transform:translateX(3px)}
 .q-item.done .q-tag{opacity:0}
-@media (max-width:640px){ .questlog{--ln:25px} }
+@media (max-width:640px){ .questlog{--ln:30px} }
 
 /* 무대 준비를 마치면 뜨는 알림 — 주변을 덮고 대기실로 돌려보낸다 */
 .done-pop{position:fixed;inset:0;z-index:30;display:none;
@@ -847,9 +859,12 @@ input[type=range]{width:150px;accent-color:var(--amber)}
   .masthead .sub{font-size:13.5px;line-height:1.55}
   .masthead{margin-bottom:12px}
   .questlog{margin-top:12px}
-  .q-name{font-size:14px}
-  .q-desc{font-size:11px}
-  .ql-note{display:none}          /* 좁은 줄에서 제목과 겹친다 */
+  .q-name{font-size:16px}
+  .q-desc{font-size:12.5px}
+  .q-item{padding-right:3%}
+  .q-tag{font-size:12px;padding:6px 9px}
+  .ql-head{flex-wrap:wrap;height:auto;min-height:calc(var(--ln)*2);row-gap:0}
+  .ql-note{font-size:12px}
   .plan-bar{gap:8px}
   .btn{padding:11px 16px;font-size:14px}
 }
@@ -1001,6 +1016,38 @@ html.play-lock,html.play-lock body{overflow:hidden;height:100%;overscroll-behavi
 .tone-target.hit .tt-band{stroke:#7FC8A0;stroke-dasharray:none}
 .tone-target.hit .tt-glow{fill:#7FC8A0;animation:none;opacity:.3}
 .tone-target.hit .tt-label{fill:#7FC8A0}
+
+/* ============ 무대 준비 — 단계 안내판 ============ */
+.step-card{display:flex;align-items:center;gap:14px;
+  padding:14px 16px;margin-top:6px;border-radius:4px;
+  background:rgba(46,32,38,.72);
+  box-shadow:inset 0 0 0 1.5px rgba(247,236,221,.14);
+  transition:box-shadow .3s, background .3s}
+.step-card.now{background:rgba(246,182,92,.14);
+  box-shadow:inset 0 0 0 2px var(--amber), 0 0 22px rgba(246,182,92,.22)}
+.step-card.done{background:rgba(127,200,160,.12);
+  box-shadow:inset 0 0 0 1.5px rgba(127,200,160,.6)}
+.step-no{flex:none;width:38px;height:38px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--f-display);font-size:20px;
+  background:rgba(247,236,221,.12);color:var(--cream)}
+.step-card.now .step-no{background:var(--amber);color:var(--night)}
+.step-card.done .step-no{background:#7FC8A0;color:var(--night)}
+.step-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.step-title{font-family:var(--f-display);font-weight:400;font-size:21px;color:var(--cream)}
+.step-how{font-size:15px;line-height:1.5;color:var(--dust)}
+.step-how b{color:var(--amber);font-weight:700}
+.step-state{flex:none;font-size:14px;font-weight:700;color:var(--cream);
+  padding:7px 12px;border-radius:2px;background:rgba(18,12,15,.55);
+  white-space:nowrap;font-variant-numeric:tabular-nums}
+.step-card.now .step-state{color:var(--amber)}
+.step-card.done .step-state{color:#7FC8A0}
+@media (max-width:640px){
+  .step-card{flex-wrap:wrap;gap:10px 12px;padding:12px 13px}
+  .step-title{font-size:19px}
+  .step-how{font-size:14px}
+  .step-state{flex-basis:100%;text-align:center;order:3}
+}
 </style>
 </head>
 
@@ -1142,7 +1189,7 @@ html.play-lock,html.play-lock body{overflow:hidden;height:100%;overscroll-behavi
     <div class="questlog">
       <div class="ql-head">
         <h3>큐시트</h3><span class="ql-count" id="ql-count">0 / 6</span>
-        <span class="ql-note" id="ql-note">전부 지우면 리허설이 열린다</span></div>
+        <button class="ql-note" id="ql-note" type="button">전부 지우면 리허설이 열린다</button></div>
       <div id="quest-list"></div>
     </div>
   </section>
@@ -1912,9 +1959,41 @@ function buildChart(song){
    소리 — 기준 시계는 반드시 ac.currentTime
    ============================================================ */
 let ac = null, master = null, noiseBuf = null;
+/* 아이폰은 옆면 무음 스위치가 켜져 있으면 웹 오디오를 막는다.
+   ① iOS 17 이상은 오디오 세션을 '재생'으로 바꾸면 무음 스위치를 무시한다.
+   ② 그 아래 버전은 무음 오디오 태그를 한 번 틀어 두면 같은 효과가 난다.
+   둘 다 사용자가 한 번 누른 뒤에만 먹힌다 */
+const SILENT_WAV = 'data:audio/wav;base64,UklGRmQGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YUAGAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA';
+let unlockAudioEl = null;
+function unlockIOSAudio(){
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+  if (unlockAudioEl) return;
+  try {
+    unlockAudioEl = new Audio(SILENT_WAV);
+    unlockAudioEl.loop = true;
+    unlockAudioEl.setAttribute('playsinline', '');
+    unlockAudioEl.volume = 0.01;
+    const p = unlockAudioEl.play();
+    if (p && p.catch) p.catch(() => { unlockAudioEl = null; });
+  } catch (e) { unlockAudioEl = null; }
+}
+
+/* 앱을 내렸다 올리면 오디오가 멈춰 있다 — 다시 깨운다 */
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && ac && ac.state !== 'running') ac.resume();
+});
+/* 첫 손길마다 한 번 더 깨운다. 아이폰은 가끔 잠든 채로 시작한다 */
+['pointerdown', 'touchend', 'keydown'].forEach(ev =>
+  addEventListener(ev, () => {
+    unlockIOSAudio();
+    if (ac && ac.state !== 'running') ac.resume();
+  }, { passive:true }));
+
 function initAudio(){
-  if (ac) return;
+  unlockIOSAudio();
+  if (ac) { if (ac.state !== 'running') ac.resume(); return; }
   ac = new (window.AudioContext || window.webkitAudioContext)();
+  if (ac.state !== 'running') ac.resume();     // 아이폰은 만들자마자 잠들어 있기도 하다
   master = ac.createGain(); master.gain.value = .8; master.connect(ac.destination);
   noiseBuf = ac.createBuffer(1, ac.sampleRate * .3, ac.sampleRate);
   const d = noiseBuf.getChannelData(0);
@@ -3226,8 +3305,23 @@ const monInner = MON.map(m =>
           fill="#3A2A31" stroke="rgba(247,236,221,.2)"/>`}`;
 
 /* ---------- 랙 조립 ---------- */
+/* 장비 위마다 큰 안내판을 단다. 무엇을 하면 되는지, 지금 어디까지 왔는지 */
+function stepCard(key, no, title, how){
+  return `<div class="step-card" id="step-${key}">
+    <span class="step-no">${no}</span>
+    <div class="step-body">
+      <b class="step-title">${title}</b>
+      <span class="step-how">${how}</span>
+    </div>
+    <span class="step-state" id="step-${key}-state">시작 전</span>
+  </div>`;
+}
 rack.innerHTML =
+  stepCard('light', 1, '조명 올리기',
+           '페이더 네 개를 <b>위로</b> 끌어올려 출력을 <b>90%</b> 넘기세요') +
   unit('u-light', '조명 콘솔',    'LIGHTING DESK · 4CH',         H_LIGHT, lightInner) +
+  stepCard('tone', 2, '사운드 맞추기',
+           '<b>주파수</b> 손잡이를 끌어 빛나는 <b>여기</b> 칸에 맞추세요') +
   unit('u-tone',  '톤 제너레이터', 'TONE GENERATOR · SOUNDCHECK', H_TONE,  toneInner);
 
 document.getElementById('rack-trim').innerHTML =
@@ -3276,6 +3370,7 @@ function applyLight(){
   });
   lightSvg.querySelector('[data-out]').textContent = Math.round(out * 100) + '%';
   if (out >= .9) check('lights');
+  paintSteps(out);
 }
 LIGHT_CH.forEach(c => {
   bindFader(c.id, FT, FH, () => lightVal[c.id], v => { lightVal[c.id] = v; applyLight(); });
@@ -3294,6 +3389,27 @@ MON.forEach(m => {
   write();
 });
 
+/* ---------- 단계 안내판 갱신 ---------- */
+let lastOut = 0;
+function paintSteps(out){
+  if (typeof out === 'number') lastOut = out;
+  const has = id => (typeof done !== 'undefined') && done.has(id);
+  const L = document.getElementById('step-light'), Ls = document.getElementById('step-light-state');
+  const T = document.getElementById('step-tone'),  Ts = document.getElementById('step-tone-state');
+  if (!L || !T) return;
+
+  const lightDone = has('lights'), toneDone = has('sound');
+  L.classList.toggle('done', lightDone);
+  T.classList.toggle('done', toneDone);
+  // 지금 할 차례인 쪽을 밝힌다
+  L.classList.toggle('now', !lightDone);
+  T.classList.toggle('now', lightDone && !toneDone);
+
+  Ls.textContent = lightDone ? '완료 ✓' : `지금 ${Math.round(lastOut * 100)}%`;
+  const tm = document.getElementById('tone-msg');
+  Ts.textContent = toneDone ? '완료 ✓' : (tm ? tm.textContent : '시작 전');
+}
+
 /* ---------- 사운드 체크 ---------- */
 const sc = { on:false, target:.5, user:.5, ref:null, mine:null, hold:0, raf:0, passed:false, ph:0 };
 /* 맞았다고 보는 폭. 화면의 '여기' 칸과 같은 크기다 */
@@ -3302,6 +3418,8 @@ const TONE_WIN = .05;
 sc.target = Math.random() < .5 ? .14 + Math.random() * .22 : .64 + Math.random() * .22;
 const freqOf = n => 220 + n * 720;                 // 0~1 → 220~940Hz
 const toneMsgEl = document.getElementById('tone-msg');
+new MutationObserver(() => paintSteps()).observe(toneMsgEl,
+  { childList:true, characterData:true, subtree:true });
 const toneHzEl  = document.getElementById('tone-hz');
 const scopeEl   = document.getElementById('scope-line');
 const needleEl  = document.getElementById('vu-needle');
@@ -3447,13 +3565,14 @@ function toneLoop(){
 /* ============================================================
    ============  큐시트 — 하나씩 빨간 줄로 지워진다  ============
    ============================================================ */
+/* go — 누르면 그 게임으로 간다. 없으면 직접 확인하고 누르는 항목 */
 const CHECKS = [
-  { id:'lights',  name:'조명 올리기',  desc:'조명 콘솔 출력 90% 이상',   auto:true },
-  { id:'sound',   name:'사운드 체크',  desc:'톤 제너레이터로 기준음 맞추기', auto:true },
-  { id:'inear',   name:'인이어 확인',  desc:'좌우 소리를 들어 본다',      auto:false },
-  { id:'costume', name:'의상 정리',    desc:'무대 순서대로 걸어 둔다',    auto:false },
-  { id:'props',   name:'소품 배치',    desc:'배치도에 세 개 이상 올리기',  auto:true },
-  { id:'truck',   name:'트럭 도착',    desc:'운송을 한 번 마치기',        auto:true },
+  { id:'lights',  name:'조명 올리기',  desc:'페이더를 올려 출력을 90% 넘기기',    auto:true,  go:'prep'   },
+  { id:'sound',   name:'사운드 체크',  desc:'주파수 손잡이를 빛나는 칸에 맞추기', auto:true,  go:'prep'   },
+  { id:'inear',   name:'인이어 확인',  desc:'좌우 소리를 들어 보고 눌러 주세요',   auto:false },
+  { id:'costume', name:'의상 정리',    desc:'무대 순서대로 걸어 두고 눌러 주세요', auto:false },
+  { id:'props',   name:'소품 배치',    desc:'무대에 소품을 세 개 이상 올리기',    auto:true,  go:'plan'   },
+  { id:'truck',   name:'트럭 도착',    desc:'노선을 골라 운송을 한 번 마치기',    auto:true,  go:'routes' },
 ];
 const done = new Set();
 const litNodes = [...document.querySelectorAll('#room-lit i')];
@@ -3739,17 +3858,22 @@ const starGlow  = document.getElementById('star-glow');
 const starCap   = document.getElementById('star-cap');
 
 questList.innerHTML = CHECKS.map((c, i) => `
-  <button class="q-item ${c.auto ? '' : 'manual'}" data-q="${c.id}" ${c.auto ? 'disabled' : ''}>
+  <button class="q-item ${c.go ? 'go' : 'manual'}" data-q="${c.id}">
     <span class="q-no">${String(i+1).padStart(2,'0')}</span>
-    <span><span class="q-name">${c.name}</span><br><span class="q-desc">${c.desc}</span></span>
-    ${c.auto ? '' : '<span class="q-tag">직접 확인</span>'}
+    <span class="q-text"><span class="q-name">${c.name}</span><span class="q-desc">${c.desc}</span></span>
+    <span class="q-tag">${c.go ? '하러 가기 →' : '확인했어요'}</span>
   </button>`).join('');
 questList.querySelectorAll('[data-q]').forEach(b => {
-  b.onclick = () => check(b.dataset.q, true);
+  const c = CHECKS.find(x => x.id === b.dataset.q);
+  // 게임이 있는 항목은 그 화면으로, 없는 항목은 눌러서 지운다
+  b.onclick = () => c.go ? go(c.go) : check(c.id, true);
 });
 
 const hsSetlist = document.getElementById('hs-setlist');
 let wasLocked = true;
+document.getElementById('ql-note').onclick = () => {
+  if (CHECKS.every(c => done.has(c.id))) go('setlist');
+};
 
 const hsPrep = document.getElementById('hs-prep');
 
@@ -3763,9 +3887,10 @@ function renderChecks(){
   const locked = LOCK_REHEARSAL && left > 0;
   document.getElementById('ql-count').textContent = `${done.size} / ${CHECKS.length}`;
   document.getElementById('ql-note').textContent =
-    !left ? '리허설이 열렸다' : LOCK_REHEARSAL ? `전부 지우면 리허설이 열린다 · ${left}개 남음`
+    !left ? '리허설이 열렸다 — 무대로 가기 →' : LOCK_REHEARSAL ? `전부 지우면 리허설이 열린다 · ${left}개 남음`
                                               : `${left}개 남음`;
   document.getElementById('prep-done').classList.toggle('on', left === 0);
+  document.querySelector('.questlog').classList.toggle('open', left === 0);
 
   // 리허설 잠금 (LOCK_REHEARSAL이 true일 때만)
   hsSetlist.disabled = locked;
@@ -3799,8 +3924,9 @@ function renderChecks(){
   updateGuide();
 }
 function check(id, toggle){
-  if (done.has(id)){ if (toggle){ done.delete(id); renderChecks(); } return; }
+  if (done.has(id)){ if (toggle){ done.delete(id); renderChecks(); paintSteps(); } return; }
   done.add(id);
+  paintSteps();
   if (ac) pickSound();
   renderChecks();
   maybePrepDone(id);
