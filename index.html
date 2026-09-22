@@ -861,30 +861,7 @@ input[type=range]{width:150px;accent-color:var(--amber)}
   .questlog{--ln:22px}
 }
 
-/* ============ 손안에서는 도로를 화면 가득 ============ */
-@media (max-width:820px) and (orientation:portrait){
-  /* 화면을 꽉 채우고 여백을 없앤다 */
-  #drive{padding:0;min-height:100svh;min-height:100vh}
-  .drive-wrap{min-height:100svh;min-height:100vh}
-  .drive-field{padding:0}
 
-  /* 16:9를 풀고 남는 세로를 전부 도로에 준다.
-     부모 높이가 확정이 아니라서 height:100% 는 0으로 무너진다.
-     화면 높이를 직접 준다 */
-  #drive .frame16{max-width:none;width:100%;aspect-ratio:auto;box-shadow:none;
-    height:100svh;height:100vh}
-  #drive .drive-field{align-items:stretch;flex:none}
-
-  /* 계기판은 도로 위에 얹는다 */
-  .drive-hud{position:absolute;left:0;right:0;
-    top:max(52px, calc(env(safe-area-inset-top) + 44px));
-    padding:0 14px}
-  .pause-btn{top:max(10px, env(safe-area-inset-top));left:auto;right:12px;
-    transform:none;background:rgba(46,32,38,.7)}
-
-  /* 조작 버튼은 엄지가 닿는 자리로 */
-  #drive .frame16{--bb:max(7%, calc(env(safe-area-inset-bottom) + 22px))}
-}
 
 /* ============ 게임 중 상태 표시 ============ */
 .tally-chip{display:inline-flex;align-items:center;gap:7px;
@@ -967,6 +944,56 @@ input[type=range]{width:150px;accent-color:var(--amber)}
 .coupon-wrap.used #coupon-use{display:none}
 .coupon-msg{display:none;margin:0 0 10px;padding:9px 12px;border-radius:2px;
   font-size:12px;line-height:1.55;color:#9B1620;background:#F7E3E4}
+
+/* ============ 게임 화면 — 가운데 고정, 스크롤 없음 ============
+   리허설과 운송은 화면 전체를 덮는 고정 판이 된다.
+   위에 계기판, 가운데 게임판, 아래에 안내 — 게임판을 중심으로 둘러싼다.
+   어느 곳을 눌러도 페이지가 밀리지 않는다 */
+html.play-lock,html.play-lock body{overflow:hidden;height:100%;overscroll-behavior:none}
+
+#stage.on,#drive.on{
+  position:fixed;inset:0;z-index:15;
+  height:100%;min-height:0;
+  overflow:hidden;overscroll-behavior:none;touch-action:none;
+  padding:max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))
+          max(12px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left))}
+
+/* 게임판과 계기판을 같은 칸에서 잰다.
+   --fw 가 게임판 폭이고, 계기판도 똑같은 폭으로 위에 붙는다.
+   가로·세로 어느 쪽이 모자라도 16:9 를 지키며 꽉 맞춘다 */
+#stage .stage-wrap,#drive .drive-wrap{
+  flex:1;min-height:0;container-type:size;
+  display:flex;flex-direction:column;justify-content:center;   /* 계기판+게임판을 한 묶음으로 가운데 */
+  --hud:78px;
+  --fw:min(100%, calc((100vh - 110px) * 16 / 9));
+  --fw:min(100cqw, calc((100cqh - var(--hud) - 10px) * 16 / 9))}
+#drive .drive-wrap{--hud:92px}
+
+#stage .hud,#drive .drive-hud{
+  flex:none;width:var(--fw);min-height:var(--hud);margin:0 auto;
+  padding:4px 2px 8px;box-sizing:border-box}
+
+#stage .field,#drive .drive-field{
+  flex:none;padding:0;                      /* 게임판 높이만큼만 — 계기판과 붙어 있게 */
+  display:flex;align-items:center;justify-content:center}
+#stage .frame16,#drive .frame16{
+  max-width:none;width:var(--fw);aspect-ratio:16/9}
+
+#stage .pause-btn,#drive .pause-btn{top:max(12px, env(safe-area-inset-top))}
+
+/* 전화기 세로 — 운송은 도로를 남은 높이 전부로 (16:9 를 푼다) */
+@media (max-width:820px) and (orientation:portrait){
+  #drive .drive-wrap{--fw:100cqw}
+  #drive .frame16{width:100cqw;height:calc(100cqh - var(--hud) - 4px);
+    aspect-ratio:auto;box-shadow:none}
+  #drive .pause-btn{left:auto;right:max(10px, env(safe-area-inset-right));transform:none;
+    background:rgba(46,32,38,.7)}
+  #drive .frame16{--bb:max(5%, calc(env(safe-area-inset-bottom) + 12px))}
+}
+
+/* 무대 배치도 — 무대 빈 곳을 쓸면 페이지가 내려가고, 소품을 잡으면 끌린다 */
+.plan-stage{touch-action:pan-y}
+.plan-item{touch-action:none}
 </style>
 </head>
 
@@ -1565,9 +1592,14 @@ let letterPending    = false;      // 대기실로 돌아가면 편지 장면을
 function rehearsalOpen(){
   return !LOCK_REHEARSAL || typeof CHECKS === 'undefined' || done.size >= CHECKS.length;
 }
+/* 게임을 하는 화면. 화면 가운데에 고정하고 스크롤을 잠근다 */
+const PLAY_SCREENS = ['stage', 'drive'];
+
 function go(id){
   if ((id === 'setlist' || id === 'stage') && !rehearsalOpen()) id = 'backstage';
   screens.forEach(s => s.classList.toggle('on', s.id === id));
+  document.documentElement.classList.toggle('play-lock', PLAY_SCREENS.includes(id));
+  if (PLAY_SCREENS.includes(id)) window.scrollTo(0, 0);
   location.hash = id;
   if (id !== 'stage' && game.running) stop();
   if (id !== 'drive' && typeof drive !== 'undefined' && drive.running) driveStop();
@@ -1580,6 +1612,11 @@ function go(id){
     setTimeout(playLetterScene, 450);
   }
 }
+PLAY_SCREENS.forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('touchmove', e => e.preventDefault(), { passive:false });
+});
+
 window.addEventListener('hashchange', () => {
   const id = location.hash.slice(1);
   if (id && document.getElementById(id) && id !== 'stage') go(id);
